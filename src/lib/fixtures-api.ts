@@ -156,6 +156,7 @@ function statsFixtureToMatch(f: StatsApiFixture): Match {
     minute: null,
     stadium: f.stadium,
     venue,
+    host_city: f.hostCity,
     match_date: f.kickoffUtc,
     attendance: null,
     goalscorers: null,
@@ -195,7 +196,7 @@ async function loadFixtures(): Promise<Match[]> {
   });
 }
 
-export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v4"], {
+export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v5"], {
   revalidate: 30,
 });
 

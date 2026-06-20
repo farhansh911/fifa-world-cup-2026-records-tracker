@@ -6,7 +6,7 @@ import { useGSAP } from "@gsap/react";
 import { Calendar } from "lucide-react";
 import { gsap, registerGsap } from "@/lib/gsap";
 import { formatScoreLine } from "@/lib/team-aliases";
-import { formatDateTime } from "@/lib/utils";
+import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import { MatchScheduleModal } from "@/components/matches/MatchScheduleModal";
 import type { RecordChase } from "@/lib/records-engine";
@@ -28,6 +28,7 @@ export interface HeroMatch {
   minute: number | null;
   status: "live" | "scheduled" | "completed" | "postponed";
   matchDate?: string;
+  hostCity?: string | null;
 }
 
 export interface HeroRecord {
@@ -134,7 +135,12 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
                       <span className="text-sm font-bold text-red-400 tabular-nums">{featuredMatch.minute}&apos;</span>
                     )}
                     {featuredMatch.status === "scheduled" && featuredMatch.matchDate && (
-                      <span className="text-xs text-white/35">{formatDateTime(featuredMatch.matchDate)}</span>
+                      <MatchKickoffTime
+                        kickoffUtc={featuredMatch.matchDate}
+                        hostCity={featuredMatch.hostCity}
+                        variant="dateTime"
+                        className="text-xs text-white/35"
+                      />
                     )}
                   </div>
 

@@ -7,7 +7,7 @@ import { MatchLiveStats } from "@/components/matches/MatchLiveStats";
 import { LiveMatchBoard } from "@/components/matches/LiveMatchBoard";
 import { getMatch, getMatchLiveView } from "@/lib/data";
 import { formatScoreLine } from "@/lib/team-aliases";
-import { formatDateTime } from "@/lib/utils";
+import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
 
 export const revalidate = 15;
 
@@ -93,7 +93,13 @@ export default async function MatchDetailPage({ params }: Props) {
         </div>
 
         <div className="space-y-3 text-sm text-white/55 border-t border-white/[0.08] pt-6">
-          <p>Date: {formatDateTime(match.match_date)}</p>
+          <MatchKickoffTime
+            kickoffUtc={match.match_date}
+            hostCity={match.host_city}
+            variant="detailed"
+            primaryClassName="text-sm text-white/55"
+            secondaryClassName="text-xs"
+          />
           {match.stadium && <p>Stadium: {match.stadium}</p>}
           {match.venue && <p>Venue: {match.venue}</p>}
           {match.attendance && <p>Attendance: {match.attendance.toLocaleString()}</p>}

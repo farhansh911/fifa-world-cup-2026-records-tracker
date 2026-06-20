@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { formatScoreLine } from "@/lib/team-aliases";
 import { TeamFlag } from "@/components/matches/TeamFlag";
+import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
 import { cn } from "@/lib/utils";
 import { groupMatchesByDate, type ScheduleMatch } from "@/lib/matches";
 
@@ -13,13 +15,20 @@ interface MatchScheduleListProps {
 }
 
 export function MatchScheduleList({ matches, showVenue = true, compact = false }: MatchScheduleListProps) {
+  const [viewerLocal, setViewerLocal] = useState(false);
+
+  useEffect(() => setViewerLocal(true), []);
+
+  const grouped = useMemo(
+    () => groupMatchesByDate(matches, viewerLocal),
+    [matches, viewerLocal]
+  );
+
   if (matches.length === 0) {
     return (
       <p className="text-sm text-white/40 py-8 text-center">No matches in the schedule yet.</p>
     );
   }
-
-  const grouped = groupMatchesByDate(matches);
 
   return (
     <div className="space-y-8">
@@ -35,13 +44,14 @@ export function MatchScheduleList({ matches, showVenue = true, compact = false }
                 href={`/matches/${match.id}`}
                 className="flex items-center gap-3 sm:gap-4 px-4 py-3 sm:py-4 hover:bg-white/[0.03] transition-colors group"
               >
-                <div className={cn("shrink-0 text-right", compact ? "w-16" : "w-20")}>
-                  <p className="text-xs text-white/45 tabular-nums">
-                    {new Date(match.match_date).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                <div className={cn("shrink-0 text-right", compact ? "w-16" : "w-24")}>
+                  <MatchKickoffTime
+                    kickoffUtc={match.match_date}
+                    hostCity={match.host_city}
+                    variant="time"
+                    className="text-xs text-white/45"
+                    secondaryClassName="text-[9px]"
+                  />
                   {match.status === "live" && (
                     <p className="text-[10px] text-red-400 font-semibold mt-0.5">LIVE {match.minute}&apos;</p>
                   )}

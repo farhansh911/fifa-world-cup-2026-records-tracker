@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatScoreLine } from "@/lib/team-aliases";
-import { cn, formatDateTime, getStatusColor } from "@/lib/utils";
+import { cn, getStatusColor } from "@/lib/utils";
+import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
 import { Badge } from "@/components/ui/Badge";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import type { Match } from "@/types/database";
@@ -30,11 +31,16 @@ export function MatchCard({ match, variant }: MatchCardProps) {
           <Badge variant={status === "live" ? "live" : "default"} className={getStatusColor(match.status)}>
             {status === "live" && match.minute ? `${match.minute}'` : match.status}
           </Badge>
-          <span className="text-xs text-white/35">
-            {status === "upcoming" || match.status === "scheduled"
-              ? formatDateTime(match.match_date)
-              : match.stadium || match.venue}
-          </span>
+          {status === "upcoming" || match.status === "scheduled" ? (
+            <MatchKickoffTime
+              kickoffUtc={match.match_date}
+              hostCity={match.host_city}
+              variant="dateTime"
+              className="text-xs text-white/35"
+            />
+          ) : (
+            <span className="text-xs text-white/35">{match.stadium || match.venue}</span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

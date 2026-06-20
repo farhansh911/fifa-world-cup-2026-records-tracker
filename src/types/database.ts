@@ -50,6 +50,7 @@ export interface Match {
   minute: number | null;
   stadium: string | null;
   venue: string | null;
+  host_city: string | null;
   match_date: string;
   attendance: number | null;
   goalscorers: string | null;

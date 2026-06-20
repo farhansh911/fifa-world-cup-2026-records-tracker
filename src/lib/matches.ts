@@ -1,4 +1,5 @@
 import type { Match } from "@/types/database";
+import { formatMatchDateHeader } from "@/lib/match-timezones";
 
 export interface ScheduleMatch {
   id: string;
@@ -9,6 +10,7 @@ export interface ScheduleMatch {
   status: "scheduled" | "live" | "completed" | "postponed";
   minute: number | null;
   match_date: string;
+  host_city: string | null;
   stadium: string | null;
   venue: string | null;
 }
@@ -31,20 +33,19 @@ export function toScheduleMatch(match: Match): ScheduleMatch {
     status: match.status,
     minute: match.minute,
     match_date: match.match_date,
+    host_city: match.host_city ?? null,
     stadium: match.stadium,
     venue: match.venue,
   };
 }
 
-export function groupMatchesByDate(matches: ScheduleMatch[]): Record<string, ScheduleMatch[]> {
+export function groupMatchesByDate(
+  matches: ScheduleMatch[],
+  viewerLocal = false
+): Record<string, ScheduleMatch[]> {
   const sorted = [...matches].sort((a, b) => a.match_date.localeCompare(b.match_date));
   return sorted.reduce<Record<string, ScheduleMatch[]>>((acc, match) => {
-    const dateKey = new Date(match.match_date).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+    const dateKey = formatMatchDateHeader(match.match_date, match.host_city, viewerLocal);
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(match);
     return acc;

@@ -90,6 +90,7 @@ export default async function HomePage() {
         minute: featuredMatchSource.minute,
         status: featuredMatchSource.status as "live" | "scheduled" | "completed" | "postponed",
         matchDate: featuredMatchSource.match_date,
+        hostCity: featuredMatchSource.host_city,
       }
     : null;
 
