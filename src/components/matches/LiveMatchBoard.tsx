@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 import { TeamFlag } from "@/components/matches/TeamFlag";
+import { useLiveScores } from "@/components/providers/LiveScoresProvider";
 import { cn } from "@/lib/utils";
 import type { LiveMatchView } from "@/lib/live-matches";
 
-interface LiveApiResponse {
-  live: LiveMatchView[];
-  featured: LiveMatchView | null;
-  updatedAt: string;
+interface LiveMatchBoardProps {
+  initialLive?: LiveMatchView[];
+  initialFeatured?: LiveMatchView | null;
+  compact?: boolean;
 }
 
 function StatBar({
@@ -145,35 +145,11 @@ function LiveMatchCard({ match }: { match: LiveMatchView }) {
   );
 }
 
-interface LiveMatchBoardProps {
-  initialLive?: LiveMatchView[];
-  initialFeatured?: LiveMatchView | null;
-  compact?: boolean;
-}
-
 export function LiveMatchBoard({ initialLive = [], initialFeatured = null, compact = false }: LiveMatchBoardProps) {
-  const [live, setLive] = useState<LiveMatchView[]>(initialLive);
-  const [featured, setFeatured] = useState<LiveMatchView | null>(initialFeatured);
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch("/api/live");
-      if (!res.ok) return;
-      const data = (await res.json()) as LiveApiResponse;
-      setLive(data.live);
-      setFeatured(data.featured);
-      setUpdatedAt(data.updatedAt);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    refresh();
-    const id = setInterval(refresh, 15000);
-    return () => clearInterval(id);
-  }, [refresh]);
+  const { live: polledLive, featured: polledFeatured, updatedAt: polledUpdatedAt } = useLiveScores();
+  const live = polledLive.length > 0 ? polledLive : initialLive;
+  const featured = polledLive.length > 0 ? null : polledFeatured ?? initialFeatured;
+  const updatedAt = polledUpdatedAt;
 
   const hasLive = live.length > 0;
   const display = hasLive ? live : featured ? [featured] : [];

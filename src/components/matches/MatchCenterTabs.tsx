@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { MatchScheduleList } from "@/components/matches/MatchScheduleList";
 import { LiveMatchBoard } from "@/components/matches/LiveMatchBoard";
@@ -35,10 +35,32 @@ export function MatchCenterTabs({
   defaultTab = "schedule",
 }: MatchCenterTabsProps) {
   const [active, setActive] = useState<Tab>(defaultTab);
+  const [groupFilter, setGroupFilter] = useState<string>("all");
+
+  const groups = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of schedule) {
+      if (m.group_name) set.add(m.group_name);
+    }
+    return [...set].sort();
+  }, [schedule]);
+
+  const filteredSchedule = useMemo(
+    () => (groupFilter === "all" ? schedule : schedule.filter((m) => m.group_name === groupFilter)),
+    [schedule, groupFilter]
+  );
+
+  const filteredCompleted = useMemo(
+    () =>
+      groupFilter === "all"
+        ? completed
+        : completed.filter((m) => (m.group_name ?? m.home_team?.group_name) === groupFilter),
+    [completed, groupFilter]
+  );
 
   return (
     <div>
-      <div className="flex gap-1 border-b border-white/[0.08] mb-8">
+      <div className="flex gap-1 border-b border-white/[0.08] mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -59,12 +81,44 @@ export function MatchCenterTabs({
         ))}
       </div>
 
+      {(active === "schedule" || active === "results") && groups.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => setGroupFilter("all")}
+            className={cn(
+              "px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors",
+              groupFilter === "all"
+                ? "bg-accent/20 text-accent border-accent/40"
+                : "border-white/10 text-white/45 hover:text-white/70"
+            )}
+          >
+            All groups
+          </button>
+          {groups.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setGroupFilter(g)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors",
+                groupFilter === g
+                  ? "bg-accent/20 text-accent border-accent/40"
+                  : "border-white/10 text-white/45 hover:text-white/70"
+              )}
+            >
+              Group {g}
+            </button>
+          ))}
+        </div>
+      )}
+
       {active === "schedule" && (
         <div>
           <p className="text-sm text-white/40 mb-6">
             Full tournament fixture list — tap any match for details.
           </p>
-          <MatchScheduleList matches={schedule} />
+          <MatchScheduleList matches={filteredSchedule} />
         </div>
       )}
 
@@ -79,12 +133,14 @@ export function MatchCenterTabs({
 
       {active === "results" && (
         <div>
-          {completed.length > 0 ? (
+          {filteredCompleted.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {completed.map((m) => <MatchCard key={m.id} match={m} variant="completed" />)}
+              {filteredCompleted.map((m) => (
+                <MatchCard key={m.id} match={m} variant="completed" />
+              ))}
             </div>
           ) : (
-            <p className="card p-10 text-center text-white/35 text-sm">No results yet.</p>
+            <p className="card p-10 text-center text-white/35 text-sm">No results in this group yet.</p>
           )}
         </div>
       )}

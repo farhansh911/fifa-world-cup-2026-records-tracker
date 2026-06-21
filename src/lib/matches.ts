@@ -11,6 +11,7 @@ export interface ScheduleMatch {
   minute: number | null;
   match_date: string;
   host_city: string | null;
+  group_name: string | null;
   stadium: string | null;
   venue: string | null;
 }
@@ -34,6 +35,7 @@ export function toScheduleMatch(match: Match): ScheduleMatch {
     minute: match.minute,
     match_date: match.match_date,
     host_city: match.host_city ?? null,
+    group_name: match.group_name ?? match.home_team?.group_name ?? null,
     stadium: match.stadium,
     venue: match.venue,
   };

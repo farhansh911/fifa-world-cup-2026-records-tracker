@@ -111,6 +111,51 @@ function addEventToMap(map: Map<string, EspnEventRecord>, event: EspnEvent): voi
   }
 }
 
+function lookupInMap(
+  map: Map<string, EspnEventRecord>,
+  home: string,
+  away: string,
+  kickoffUtc: string
+): EspnEventRecord | undefined {
+  return (
+    map.get(buildMatchKey(home, away, kickoffUtc)) ??
+    map.get(buildDayMatchKey(home, away, kickoffUtc))
+  );
+}
+
+/** Find ESPN event for any tournament match, including past fixtures. */
+export async function lookupEspnEventForMatch(
+  home: string,
+  away: string,
+  kickoffUtc: string,
+  recentEvents?: Map<string, EspnEventRecord>
+): Promise<EspnEventRecord | undefined> {
+  if (recentEvents) {
+    const cached = lookupInMap(recentEvents, home, away, kickoffUtc);
+    if (cached) return cached;
+  }
+
+  const kickoff = new Date(kickoffUtc);
+  const dateParams = [-1, 0, 1].map((offset) => {
+    const d = new Date(kickoff);
+    d.setUTCDate(d.getUTCDate() + offset);
+    return formatEspnDate(d);
+  });
+
+  const batches = await Promise.all(
+    dateParams.map((date) => fetchScoreboard(`${ESPN_SCOREBOARD}?dates=${date}`))
+  );
+
+  const map = new Map<string, EspnEventRecord>();
+  for (const events of batches) {
+    for (const event of events) {
+      addEventToMap(map, event);
+    }
+  }
+
+  return lookupInMap(map, home, away, kickoffUtc);
+}
+
 export async function fetchEspnEvents(): Promise<Map<string, EspnEventRecord>> {
   const today = new Date();
   const yesterday = new Date(today);

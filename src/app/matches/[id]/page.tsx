@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createMetadata } from "@/lib/seo";
-import { Badge } from "@/components/ui/Badge";
-import { TeamFlag } from "@/components/matches/TeamFlag";
-import { MatchLiveStats } from "@/components/matches/MatchLiveStats";
+import { MatchDetailScores } from "@/components/matches/MatchDetailScores";
+import { MatchDetailStats } from "@/components/matches/MatchDetailStats";
+import { GroupBadge } from "@/components/matches/GroupBadge";
 import { LiveMatchBoard } from "@/components/matches/LiveMatchBoard";
 import { getMatch, getMatchLiveView } from "@/lib/data";
-import { formatScoreLine } from "@/lib/team-aliases";
 import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
 
 export const revalidate = 15;
@@ -45,8 +44,6 @@ export default async function MatchDetailPage({ params }: Props) {
   };
 
   const display = liveView ?? null;
-  const homeScore = display?.home.score ?? match.home_score;
-  const awayScore = display?.away.score ?? match.away_score;
   const isLive = (display?.status ?? match.status) === "live";
 
   return (
@@ -66,31 +63,22 @@ export default async function MatchDetailPage({ params }: Props) {
       )}
 
       <article className="card p-8">
-        <div className="flex justify-center mb-6">
-          <Badge variant={isLive ? "live" : "default"}>
-            {isLive && display?.clock ? `Live · ${display.clock}` : match.status}
-          </Badge>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <GroupBadge group={match.group_name} />
+          {match.summary && (
+            <span className="text-[10px] uppercase tracking-wider text-white/35">{match.summary}</span>
+          )}
         </div>
 
-        <div className="flex items-center justify-between gap-4 mb-8">
-          <div className="flex-1 flex flex-col items-center gap-3">
-            <TeamFlag {...home} size={56} />
-            <div className="text-xl font-bold text-center">{home.name}</div>
-            <div className="text-sm text-white/40">{home.code}</div>
-          </div>
-
-          <div className="font-display text-4xl sm:text-5xl font-black tabular-nums shrink-0">
-            {match.status === "scheduled" && !display
-              ? "vs"
-              : formatScoreLine(match.status, homeScore, awayScore) ?? `${homeScore ?? 0}–${awayScore ?? 0}`}
-          </div>
-
-          <div className="flex-1 flex flex-col items-center gap-3">
-            <TeamFlag {...away} size={56} />
-            <div className="text-xl font-bold text-center">{away.name}</div>
-            <div className="text-sm text-white/40">{away.code}</div>
-          </div>
-        </div>
+        <MatchDetailScores
+          matchId={match.id}
+          home={home}
+          away={away}
+          initialStatus={match.status}
+          initialHomeScore={display?.home.score ?? match.home_score}
+          initialAwayScore={display?.away.score ?? match.away_score}
+          initialClock={display?.clock}
+        />
 
         <div className="space-y-3 text-sm text-white/55 border-t border-white/[0.08] pt-6">
           <MatchKickoffTime
@@ -105,7 +93,7 @@ export default async function MatchDetailPage({ params }: Props) {
           {match.attendance && <p>Attendance: {match.attendance.toLocaleString()}</p>}
         </div>
 
-        {display && !isLive && <MatchLiveStats view={display} />}
+        {!isLive && <MatchDetailStats matchId={match.id} initialView={display} />}
       </article>
     </div>
   );

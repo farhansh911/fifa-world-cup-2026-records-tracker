@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { Match } from "@/types/database";
 import { fetchEspnMatchDetail, type EspnMatchDetail } from "@/lib/espn-match-detail";
-import { fetchEspnEvents, type EspnEventRecord } from "@/lib/espn-events";
+import { fetchEspnEvents, lookupEspnEventForMatch, type EspnEventRecord } from "@/lib/espn-events";
 import { getWorldCupMatches } from "@/lib/fixtures-api";
 import { buildDayMatchKey, buildMatchKey, canonicalTeamName } from "@/lib/team-aliases";
 import { getFlagUrl, getTeamCode } from "@/lib/team-codes";
@@ -210,18 +210,18 @@ export async function getMatchLiveView(matchId: string): Promise<LiveMatchView |
   const match = matches.find((m) => m.id === matchId);
   if (!match) return null;
 
-  const event = lookupEvent(
-    espnEvents,
-    match.home_team?.name ?? "",
-    match.away_team?.name ?? "",
-    match.match_date
-  );
+  const home = match.home_team?.name ?? "";
+  const away = match.away_team?.name ?? "";
+
+  const event = await lookupEspnEventForMatch(home, away, match.match_date, espnEvents);
   if (!event) return null;
 
   const detail = await fetchEspnMatchDetail(event.eventId);
-  if (!detail) return null;
+  if (detail) {
+    return mergeMatchWithDetail(match, detail, event.eventId);
+  }
 
-  return mergeMatchWithDetail(match, detail, event.eventId);
+  return viewFromEvent(event, match);
 }
 
 /** Latest completed match with full stats — fallback when nothing is live. */
@@ -237,16 +237,18 @@ export async function getFeaturedMatchView(): Promise<LiveMatchView | null> {
 
   if (!recent) return null;
 
-  const event = lookupEvent(
-    espnEvents,
+  const event = await lookupEspnEventForMatch(
     recent.home_team?.name ?? "",
     recent.away_team?.name ?? "",
-    recent.match_date
+    recent.match_date,
+    espnEvents
   );
   if (!event) return null;
 
   const detail = await fetchEspnMatchDetail(event.eventId);
-  if (!detail) return null;
+  if (detail) {
+    return mergeMatchWithDetail(recent, detail, event.eventId);
+  }
 
-  return mergeMatchWithDetail(recent, detail, event.eventId);
+  return viewFromEvent(event, recent);
 }

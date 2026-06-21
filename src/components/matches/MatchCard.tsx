@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { formatScoreLine } from "@/lib/team-aliases";
 import { cn, getStatusColor } from "@/lib/utils";
 import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
+import { GroupBadge } from "@/components/matches/GroupBadge";
+import { useLiveMatchOverlay } from "@/components/providers/LiveScoresProvider";
 import { Badge } from "@/components/ui/Badge";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import type { Match } from "@/types/database";
@@ -12,7 +16,19 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ match, variant }: MatchCardProps) {
-  const status = variant || match.status;
+  const overlay = useLiveMatchOverlay(match.id);
+
+  const status = overlay?.status ?? variant ?? match.status;
+  const homeScore = overlay?.home.score ?? match.home_score;
+  const awayScore = overlay?.away.score ?? match.away_score;
+  const minute = overlay?.minute ?? match.minute;
+  const isLive = status === "live";
+  const group = match.group_name ?? match.home_team?.group_name;
+  const goalLine =
+    overlay && overlay.goals.length > 0
+      ? overlay.goals.map((g) => `${g.player} ${g.minute}'`).join(" · ")
+      : match.goalscorers;
+
   const home = {
     name: match.home_team?.name ?? "TBD",
     code: match.home_team?.code ?? "?",
@@ -26,12 +42,15 @@ export function MatchCard({ match, variant }: MatchCardProps) {
 
   return (
     <Link href={`/matches/${match.id}`} className="block group">
-      <article className={cn("card card-hover p-4", status === "live" && "border-red-500/30")}>
+      <article className={cn("card card-hover p-4", isLive && "border-red-500/30")}>
         <div className="flex items-center justify-between mb-4">
-          <Badge variant={status === "live" ? "live" : "default"} className={getStatusColor(match.status)}>
-            {status === "live" && match.minute ? `${match.minute}'` : match.status}
-          </Badge>
-          {status === "upcoming" || match.status === "scheduled" ? (
+          <div className="flex items-center gap-2">
+            <Badge variant={isLive ? "live" : "default"} className={getStatusColor(status)}>
+              {isLive && minute != null ? `${minute}'` : status}
+            </Badge>
+            <GroupBadge group={group} />
+          </div>
+          {!isLive && (status === "upcoming" || status === "scheduled") ? (
             <MatchKickoffTime
               kickoffUtc={match.match_date}
               hostCity={match.host_city}
@@ -52,10 +71,10 @@ export function MatchCard({ match, variant }: MatchCardProps) {
           </div>
 
           <div className="font-display text-xl font-bold tabular-nums shrink-0 px-2">
-            {match.status === "scheduled" ? (
+            {status === "scheduled" && !overlay ? (
               <span className="text-white/25 text-sm">vs</span>
-            ) : formatScoreLine(match.status, match.home_score, match.away_score) ? (
-              <span>{formatScoreLine(match.status, match.home_score, match.away_score)}</span>
+            ) : formatScoreLine(status, homeScore, awayScore) ? (
+              <span>{formatScoreLine(status, homeScore, awayScore)}</span>
             ) : (
               <span className="text-white/35 text-sm">FT</span>
             )}
@@ -69,11 +88,11 @@ export function MatchCard({ match, variant }: MatchCardProps) {
           </div>
         </div>
 
-        {status === "completed" && match.goalscorers && (
-          <p className="mt-3 text-xs text-white/35 truncate border-t border-white/[0.06] pt-3">{match.goalscorers}</p>
+        {(status === "completed" || isLive) && goalLine && (
+          <p className="mt-3 text-xs text-white/35 truncate border-t border-white/[0.06] pt-3">{goalLine}</p>
         )}
 
-        {(match.stadium || match.venue) && (status === "upcoming" || match.status === "scheduled") && (
+        {(match.stadium || match.venue) && (status === "upcoming" || status === "scheduled") && !overlay && (
           <p className="mt-3 text-xs text-white/30 border-t border-white/[0.06] pt-3">{match.stadium || match.venue}</p>
         )}
       </article>

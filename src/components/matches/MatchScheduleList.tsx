@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatScoreLine } from "@/lib/team-aliases";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
+import { GroupBadge } from "@/components/matches/GroupBadge";
 import { cn } from "@/lib/utils";
 import { groupMatchesByDate, type ScheduleMatch } from "@/lib/matches";
 
@@ -52,6 +53,11 @@ export function MatchScheduleList({ matches, showVenue = true, compact = false }
                     className="text-xs text-white/45"
                     secondaryClassName="text-[9px]"
                   />
+                  {match.group_name && (
+                    <div className="mt-1 flex justify-end">
+                      <GroupBadge group={match.group_name} />
+                    </div>
+                  )}
                   {match.status === "live" && (
                     <p className="text-[10px] text-red-400 font-semibold mt-0.5">LIVE {match.minute}&apos;</p>
                   )}

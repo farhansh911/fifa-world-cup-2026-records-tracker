@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { LiveScoresProvider } from "@/components/providers/LiveScoresProvider";
 import { ConditionalShell } from "@/components/layout/ConditionalShell";
 import { SiteBackground } from "@/components/layout/SiteBackground";
 import { createMetadata, websiteJsonLd, sportsEventJsonLd } from "@/lib/seo";
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <SiteBackground />
         <ThemeProvider>
-          <ConditionalShell>{children}</ConditionalShell>
+          <LiveScoresProvider>
+            <ConditionalShell>{children}</ConditionalShell>
+          </LiveScoresProvider>
         </ThemeProvider>
       </body>
     </html>

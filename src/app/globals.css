@@ -22,14 +22,15 @@
 
 html.light-mode {
   color-scheme: light;
-  --theme-fg: #111827;
-  --theme-fg-muted: #6b7280;
-  --theme-bg: #f9fafb;
-  --theme-bg-elevated: #ffffff;
-  --theme-bg-panel: #ffffff;
-  --theme-bg-hover: #f3f4f6;
-  --theme-border: rgba(0, 0, 0, 0.1);
-  --theme-border-subtle: rgba(0, 0, 0, 0.06);
+  --theme-fg: #0f172a;
+  --theme-fg-muted: #64748b;
+  --theme-fg-subtle: #94a3b8;
+  --theme-bg: #e9edf3;
+  --theme-bg-elevated: #f4f6f9;
+  --theme-bg-panel: #eef1f6;
+  --theme-bg-hover: #dfe4ec;
+  --theme-border: rgba(15, 23, 42, 0.1);
+  --theme-border-subtle: rgba(15, 23, 42, 0.06);
 }
 
 @layer base {
@@ -64,6 +65,10 @@ html.light-mode {
     background-color: var(--theme-bg-elevated);
     border: 1px solid var(--theme-border);
     @apply transition-colors duration-200;
+  }
+
+  html.light-mode .card {
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.04);
   }
 
   .card-hover {
@@ -112,30 +117,72 @@ html.light-mode {
 }
 
 html.light-mode .hero-grid-lines {
-  opacity: 0.06;
+  opacity: 0.05;
   background-image: repeating-linear-gradient(
     90deg,
     transparent,
     transparent 80px,
-    rgba(0, 0, 0, 0.12) 80px,
-    rgba(0, 0, 0, 0.12) 81px
+    rgba(15, 23, 42, 0.07) 80px,
+    rgba(15, 23, 42, 0.07) 81px
   );
 }
 
-/* Override Tailwind white text utilities in light mode */
-html.light-mode [class*="text-white"] {
+html.light-mode header,
+html.light-mode footer {
+  background-color: color-mix(in srgb, var(--theme-bg-panel) 94%, transparent) !important;
+}
+
+html.light-mode .hero-btn.bg-white {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.light-mode .hero-btn.bg-white:hover {
+  background-color: #1e293b !important;
+}
+
+/* Text hierarchy — map opacity variants individually (not one flat gray) */
+html.light-mode .text-white {
+  color: var(--theme-fg) !important;
+}
+
+html.light-mode .text-white\/80 {
+  color: color-mix(in srgb, var(--theme-fg) 88%, transparent) !important;
+}
+
+html.light-mode .text-white\/70 {
   color: var(--theme-fg-muted) !important;
 }
 
-html.light-mode [class~="text-white"] {
-  color: var(--theme-fg) !important;
+html.light-mode .text-white\/55 {
+  color: var(--theme-fg-muted) !important;
+}
+
+html.light-mode .text-white\/50 {
+  color: var(--theme-fg-muted) !important;
+}
+
+html.light-mode .text-white\/45 {
+  color: var(--theme-fg-muted) !important;
+}
+
+html.light-mode .text-white\/40 {
+  color: var(--theme-fg-subtle) !important;
+}
+
+html.light-mode .text-white\/35 {
+  color: var(--theme-fg-subtle) !important;
+}
+
+html.light-mode .text-white\/30 {
+  color: var(--theme-fg-subtle) !important;
+}
+
+html.light-mode .text-white\/25 {
+  color: color-mix(in srgb, var(--theme-fg-subtle) 80%, transparent) !important;
 }
 
 html.light-mode .hover\:text-white:hover,
-html.light-mode [class*="hover:text-white"]:hover {
-  color: var(--theme-fg) !important;
-}
-
 html.light-mode .hover\:text-white\/80:hover {
   color: var(--theme-fg) !important;
 }
@@ -145,7 +192,7 @@ html.light-mode .hover\:text-white\/70:hover {
 }
 
 html.light-mode .placeholder\:text-white\/30::placeholder {
-  color: var(--theme-fg-muted) !important;
+  color: var(--theme-fg-subtle) !important;
 }
 
 /* Override dark surface backgrounds in light mode */
@@ -161,7 +208,23 @@ html.light-mode [class*="bg-[#13101f]"] {
 
 html.light-mode .bg-white\/5,
 html.light-mode [class*="bg-white/["] {
-  background-color: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light-mode .text-accent {
+  color: #0284c7 !important;
+}
+
+html.light-mode .text-red-400 {
+  color: #e11d48 !important;
+}
+
+html.light-mode .text-secondary {
+  color: #db2777 !important;
+}
+
+html.light-mode .text-highlight {
+  color: #ca8a04 !important;
 }
 
 /* Override white borders in light mode */

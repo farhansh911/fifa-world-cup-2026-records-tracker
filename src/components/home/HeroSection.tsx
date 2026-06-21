@@ -7,6 +7,7 @@ import { Calendar } from "lucide-react";
 import { gsap, registerGsap } from "@/lib/gsap";
 import { formatScoreLine } from "@/lib/team-aliases";
 import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
+import { useLiveMatchOverlay } from "@/components/providers/LiveScoresProvider";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import { MatchScheduleModal } from "@/components/matches/MatchScheduleModal";
 import type { RecordChase } from "@/lib/records-engine";
@@ -49,6 +50,17 @@ interface HeroSectionProps {
 export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, upcomingSchedule }: HeroSectionProps) {
   const container = useRef<HTMLElement>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const overlay = useLiveMatchOverlay(featuredMatch?.id ?? "");
+
+  const displayMatch = featuredMatch
+    ? {
+        ...featuredMatch,
+        status: overlay?.status ?? featuredMatch.status,
+        homeScore: overlay?.home.score ?? featuredMatch.homeScore,
+        awayScore: overlay?.away.score ?? featuredMatch.awayScore,
+        minute: overlay?.minute ?? featuredMatch.minute,
+      }
+    : null;
 
   useGSAP(
     () => {
@@ -116,70 +128,70 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
             </div>
 
             <aside className="hero-panel space-y-3 lg:pt-8">
-              {featuredMatch ? (
+              {displayMatch ? (
                 <div className="hero-panel-block card p-5">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35">
-                      {featuredMatch.status === "live" ? (
+                      {displayMatch.status === "live" ? (
                         <span className="text-red-400 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
                           Live now
                         </span>
-                      ) : featuredMatch.status === "scheduled" ? (
+                      ) : displayMatch.status === "scheduled" ? (
                         "Up next"
                       ) : (
                         "Latest result"
                       )}
                     </p>
-                    {featuredMatch.status === "live" && featuredMatch.minute != null && (
-                      <span className="text-sm font-bold text-red-400 tabular-nums">{featuredMatch.minute}&apos;</span>
+                    {displayMatch.status === "live" && displayMatch.minute != null && (
+                      <span className="text-sm font-bold text-red-400 tabular-nums">{displayMatch.minute}&apos;</span>
                     )}
-                    {featuredMatch.status === "scheduled" && featuredMatch.matchDate && (
+                    {displayMatch.status === "scheduled" && displayMatch.matchDate && (
                       <MatchKickoffTime
-                        kickoffUtc={featuredMatch.matchDate}
-                        hostCity={featuredMatch.hostCity}
+                        kickoffUtc={displayMatch.matchDate}
+                        hostCity={displayMatch.hostCity}
                         variant="dateTime"
                         className="text-xs text-white/35"
                       />
                     )}
                   </div>
 
-                  <Link href={`/matches/${featuredMatch.id}`} className="block space-y-3 group">
+                  <Link href={`/matches/${displayMatch.id}`} className="block space-y-3 group">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <TeamFlag {...featuredMatch.home} size={32} />
+                        <TeamFlag {...displayMatch.home} size={32} />
                         <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                          {featuredMatch.home.name}
+                          {displayMatch.home.name}
                         </span>
                       </div>
-                      {featuredMatch.status !== "scheduled" && (
+                      {displayMatch.status !== "scheduled" && (
                         <span className="font-display text-xl font-bold tabular-nums">
                           {formatScoreLine(
-                            featuredMatch.status,
-                            featuredMatch.homeScore,
-                            featuredMatch.awayScore
+                            displayMatch.status,
+                            displayMatch.homeScore,
+                            displayMatch.awayScore
                           )?.split("–")[0] ?? "—"}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <TeamFlag {...featuredMatch.away} size={32} />
+                        <TeamFlag {...displayMatch.away} size={32} />
                         <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                          {featuredMatch.away.name}
+                          {displayMatch.away.name}
                         </span>
                       </div>
-                      {featuredMatch.status !== "scheduled" && (
+                      {displayMatch.status !== "scheduled" && (
                         <span className="font-display text-xl font-bold tabular-nums">
                           {formatScoreLine(
-                            featuredMatch.status,
-                            featuredMatch.homeScore,
-                            featuredMatch.awayScore
+                            displayMatch.status,
+                            displayMatch.homeScore,
+                            displayMatch.awayScore
                           )?.split("–")[1] ?? "—"}
                         </span>
                       )}
                     </div>
-                    {featuredMatch.status === "scheduled" && (
+                    {displayMatch.status === "scheduled" && (
                       <p className="text-center text-xs text-white/30 pt-2 border-t border-white/[0.06]">vs</p>
                     )}
                   </Link>
