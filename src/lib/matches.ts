@@ -53,3 +53,66 @@ export function groupMatchesByDate(
     return acc;
   }, {});
 }
+
+function dateHeaderId(dateKey: string): string {
+  return `schedule-day-${dateKey.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
+}
+
+/** Live matches plus the next few upcoming fixtures for the "Next up" strip. */
+export function getNextUpMatches(matches: ScheduleMatch[], limit = 4): ScheduleMatch[] {
+  const now = Date.now();
+  const live = matches.filter((m) => m.status === "live");
+  const upcoming = matches
+    .filter(
+      (m) =>
+        (m.status === "scheduled" || m.status === "postponed") &&
+        new Date(m.match_date).getTime() >= now - 30 * 60 * 1000
+    )
+    .sort((a, b) => a.match_date.localeCompare(b.match_date));
+
+  const seen = new Set<string>();
+  const nextUp: ScheduleMatch[] = [];
+
+  for (const m of [...live, ...upcoming]) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    nextUp.push(m);
+    if (nextUp.length >= limit) break;
+  }
+
+  return nextUp;
+}
+
+/** Date section id to scroll to — prefers live, then next upcoming, else today. */
+export function getScheduleScrollTarget(
+  matches: ScheduleMatch[],
+  grouped: Record<string, ScheduleMatch[]>,
+  viewerLocal: boolean
+): string | null {
+  const now = Date.now();
+  const anchor =
+    matches.find((m) => m.status === "live") ??
+    matches.find(
+      (m) =>
+        (m.status === "scheduled" || m.status === "postponed") &&
+        new Date(m.match_date).getTime() >= now
+    );
+
+  if (anchor) {
+    const key = formatMatchDateHeader(anchor.match_date, anchor.host_city, viewerLocal);
+    return dateHeaderId(key);
+  }
+
+  const firstFutureDate = Object.entries(grouped).find(([, dayMatches]) =>
+    dayMatches.some(
+      (m) =>
+        m.status === "scheduled" ||
+        m.status === "postponed" ||
+        m.status === "live"
+    )
+  );
+
+  return firstFutureDate ? dateHeaderId(firstFutureDate[0]) : null;
+}
+
+export { dateHeaderId };

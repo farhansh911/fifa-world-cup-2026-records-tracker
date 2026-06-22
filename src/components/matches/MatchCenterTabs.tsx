@@ -116,7 +116,7 @@ export function MatchCenterTabs({
       {active === "schedule" && (
         <div>
           <p className="text-sm text-white/40 mb-6">
-            Full tournament fixture list — tap any match for details.
+            Next matches shown at the top — full fixture list below, starting from today.
           </p>
           <MatchScheduleList matches={filteredSchedule} />
         </div>
