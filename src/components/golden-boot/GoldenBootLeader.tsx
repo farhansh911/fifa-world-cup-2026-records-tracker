@@ -41,7 +41,7 @@ export function GoldenBootLeader({
 
   return (
     <div className="card overflow-hidden border-highlight/20">
-      <div className="bg-gradient-to-br from-highlight/10 via-transparent to-transparent px-6 py-5 border-b border-white/[0.06]">
+      <div className="bg-gradient-to-br from-highlight/10 via-transparent to-transparent px-6 py-5 border-b border-[var(--theme-border-subtle)]">
         <div className="flex items-center gap-2 text-highlight mb-1">
           <Trophy className="w-4 h-4" strokeWidth={2} />
           <span className="text-[10px] font-semibold uppercase tracking-widest">
@@ -60,8 +60,8 @@ export function GoldenBootLeader({
           href={`/players/${soloLeader.playerId}`}
           className="group relative block overflow-hidden"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0f0b18] via-[#0f0b18]/95 to-transparent z-10 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f0b18] via-transparent to-transparent z-10 pointer-events-none md:hidden" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--theme-bg-elevated)] via-[color-mix(in_srgb,var(--theme-bg-elevated)_92%,transparent)] to-transparent z-10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--theme-bg-elevated)] via-transparent to-transparent z-10 pointer-events-none md:hidden" />
 
           <div className="relative z-20 grid md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_260px] items-end gap-6 p-6 sm:p-8">
             <div className="min-w-0">
@@ -90,7 +90,7 @@ export function GoldenBootLeader({
                 <span className="text-sm text-white/45">{soloLeader.team}</span>
               </div>
 
-              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black leading-tight group-hover:text-highlight transition-colors">
+              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black leading-tight text-[var(--theme-fg)] group-hover:text-highlight transition-colors">
                 {soloLeader.name}
               </h2>
               <p className="hidden md:block text-sm text-white/45 mt-2">{soloLeader.team}</p>
@@ -111,7 +111,7 @@ export function GoldenBootLeader({
                 photoUrl={soloLeader.photoUrl}
                 size={200}
                 priority
-                className="relative shadow-2xl shadow-black/40 ring-2 ring-highlight/20"
+                className="relative shadow-2xl shadow-black/20 ring-2 ring-highlight/25"
               />
             </div>
           </div>
@@ -156,7 +156,7 @@ export function GoldenBootLeader({
       )}
 
       {goalsToFontaine != null && goalsToFontaine >= 0 && (
-        <div className="px-6 py-4 border-t border-white/[0.06] bg-white/[0.02] text-sm text-white/45">
+        <div className="px-6 py-4 border-t border-[var(--theme-border-subtle)] bg-[color-mix(in_srgb,var(--theme-fg)_3%,transparent)] text-sm text-white/45">
           {goalsToFontaine === 0 ? (
             <span className="text-highlight font-medium">
               Level with {fontaineHolder}&apos;s single-tournament record ({fontaineRecord} goals)!
