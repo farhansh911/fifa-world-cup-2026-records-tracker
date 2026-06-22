@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import { MatchScheduleList } from "@/components/matches/MatchScheduleList";
 import { MatchResultsList } from "@/components/matches/MatchResultsList";
+import { MatchCenterGroupStandings } from "@/components/matches/MatchCenterGroupStandings";
 import { LiveMatchBoard } from "@/components/matches/LiveMatchBoard";
 import { cn } from "@/lib/utils";
 import type { Match } from "@/types/database";
 import type { ScheduleMatch } from "@/lib/matches";
 import type { LiveMatchView } from "@/lib/live-matches";
+import type { GroupStandings } from "@/lib/group-standings";
 
 type Tab = "schedule" | "live" | "results";
 
@@ -15,6 +17,7 @@ interface MatchCenterTabsProps {
   schedule: ScheduleMatch[];
   live: Match[];
   completed: Match[];
+  groupStandings: GroupStandings[];
   liveViews?: LiveMatchView[];
   featuredView?: LiveMatchView | null;
   defaultTab?: Tab;
@@ -30,6 +33,7 @@ export function MatchCenterTabs({
   schedule,
   live,
   completed,
+  groupStandings,
   liveViews = [],
   featuredView = null,
   defaultTab = "schedule",
@@ -56,6 +60,11 @@ export function MatchCenterTabs({
         ? completed
         : completed.filter((m) => (m.group_name ?? m.home_team?.group_name) === groupFilter),
     [completed, groupFilter]
+  );
+
+  const selectedGroupStandings = useMemo(
+    () => (groupFilter === "all" ? null : groupStandings.find((g) => g.group === groupFilter) ?? null),
+    [groupFilter, groupStandings]
   );
 
   return (
@@ -119,6 +128,9 @@ export function MatchCenterTabs({
             Next matches shown at the top — full fixture list below, starting from today.
           </p>
           <MatchScheduleList matches={filteredSchedule} />
+          {selectedGroupStandings && (
+            <MatchCenterGroupStandings standings={selectedGroupStandings} />
+          )}
         </div>
       )}
 
@@ -137,6 +149,9 @@ export function MatchCenterTabs({
             Final scores grouped by date — tap any match for stats and group standings.
           </p>
           <MatchResultsList matches={filteredCompleted} />
+          {selectedGroupStandings && (
+            <MatchCenterGroupStandings standings={selectedGroupStandings} />
+          )}
         </div>
       )}
     </div>

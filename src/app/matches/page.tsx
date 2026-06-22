@@ -3,7 +3,7 @@ import { PageBanner } from "@/components/layout/PageBanner";
 import { MatchCenterTabs } from "@/components/matches/MatchCenterTabs";
 import { LiveMatchBoardServer } from "@/components/matches/LiveMatchBoardServer";
 import { toScheduleMatch } from "@/lib/matches";
-import { getLiveMatches, getMatchSchedule, getCompletedMatches, getLiveMatchViews, getFeaturedMatchView } from "@/lib/data";
+import { getLiveMatches, getMatchSchedule, getCompletedMatches, getLiveMatchViews, getFeaturedMatchView, getGroupStandings } from "@/lib/data";
 
 export const revalidate = 60;
 
@@ -14,12 +14,13 @@ export const metadata = createMetadata({
 });
 
 export default async function MatchesPage() {
-  const [live, scheduleMatches, completed, liveViews, featuredView] = await Promise.all([
+  const [live, scheduleMatches, completed, liveViews, featuredView, groupStandings] = await Promise.all([
     getLiveMatches(),
     getMatchSchedule(),
     getCompletedMatches(50),
     getLiveMatchViews(),
     getFeaturedMatchView(),
+    getGroupStandings(),
   ]);
 
   const schedule = scheduleMatches.map(toScheduleMatch);
@@ -32,6 +33,7 @@ export default async function MatchesPage() {
           schedule={schedule}
           live={live}
           completed={completed}
+          groupStandings={groupStandings}
           liveViews={liveViews}
           featuredView={featuredView}
           defaultTab={liveViews.length > 0 ? "live" : "schedule"}

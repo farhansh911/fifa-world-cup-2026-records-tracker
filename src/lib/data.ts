@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getWorldCupMatches } from "@/lib/fixtures-api";
+import { buildGroupStandings, type GroupStandings } from "@/lib/group-standings";
 import { getRecordsSnapshot } from "@/lib/records-engine";
 import { getLiveMatchViews, getFeaturedMatchView, getMatchLiveView } from "@/lib/live-matches";
 
@@ -157,6 +158,11 @@ export async function getTeams(): Promise<Team[]> {
 export async function getTeam(id: string): Promise<Team | null> {
   const teams = await getTeams();
   return teams.find((t) => t.id === id) ?? null;
+}
+
+export async function getGroupStandings(): Promise<GroupStandings[]> {
+  const matches = await fetchMatches();
+  return buildGroupStandings(matches);
 }
 
 export async function getTopScorers(limit = 10): Promise<Player[]> {
