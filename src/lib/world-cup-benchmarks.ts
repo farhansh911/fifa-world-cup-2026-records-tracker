@@ -48,6 +48,42 @@ export const ALL_TIME_BENCHMARKS: HistoricalBenchmark[] = [
     importance: "high",
     description: "Hungary 10–1 El Salvador (1982); Germany also scored 10 vs UAE (2002).",
   },
+  {
+    id: "career-assists",
+    title: "Most FIFA World Cup assists (all-time)",
+    holder: "Thomas Müller",
+    value: 8,
+    unit: "assists",
+    importance: "high",
+    description: "Total career assists across all World Cup tournaments.",
+  },
+  {
+    id: "career-appearances",
+    title: "Most FIFA World Cup appearances (all-time)",
+    holder: "Lothar Matthäus",
+    value: 25,
+    unit: "matches",
+    importance: "high",
+    description: "Matthäus played in five World Cups (1982–1998).",
+  },
+  {
+    id: "match-total-goals",
+    title: "Most goals in a single World Cup match",
+    holder: "Austria vs Switzerland (1954)",
+    value: 12,
+    unit: "goals",
+    importance: "legendary",
+    description: "Austria 7–5 Switzerland in the 1954 quarter-final — 12 combined goals.",
+  },
+  {
+    id: "biggest-margin",
+    title: "Biggest margin of victory in a World Cup match",
+    holder: "Hungary",
+    value: 9,
+    unit: "goals",
+    importance: "high",
+    description: "Hungary beat El Salvador 10–1 at Spain 1982 (9-goal margin).",
+  },
 ];
 
 /** World Cup goals before the 2026 tournament kicked off (11 June 2026). */

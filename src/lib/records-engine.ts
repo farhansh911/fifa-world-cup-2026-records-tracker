@@ -157,10 +157,69 @@ function buildBrokenRecords(chases: RecordChase[], matches: Match[]): RecordBrok
     });
   }
 
+  const margins = completed
+    .filter((m) => m.home_score != null && m.away_score != null)
+    .map((m) => ({
+      match: m,
+      margin: Math.abs((m.home_score ?? 0) - (m.away_score ?? 0)),
+      winner:
+        (m.home_score ?? 0) > (m.away_score ?? 0)
+          ? m.home_team?.name ?? "?"
+          : m.away_team?.name ?? "?",
+      scoreline: `${m.home_score}–${m.away_score}`,
+    }))
+    .sort((a, b) => b.margin - a.margin);
+
+  const topMargin = margins[0];
+  if (topMargin && topMargin.margin >= 4) {
+    const m = topMargin.match;
+    broken.push({
+      id: makeId("broken", `biggest-margin-${m.id}`),
+      title: "Biggest margin of victory at World Cup 2026",
+      previous_holder: "—",
+      new_holder: topMargin.winner,
+      old_value: "—",
+      new_value: `${topMargin.margin}-goal win`,
+      match_id: m.id,
+      importance: topMargin.margin >= 6 ? "high" : "medium",
+      explanation: `${topMargin.winner} won ${m.home_team?.name} ${m.home_score}–${m.away_score} ${m.away_team?.name} — the largest winning margin so far at this World Cup.`,
+      event_date: m.match_date,
+      created_at: NOW(),
+      updated_at: NOW(),
+      match: m,
+    });
+  }
+
+  const attendanceLeader = completed
+    .filter((m) => m.attendance != null && m.attendance > 0)
+    .sort((a, b) => (b.attendance ?? 0) - (a.attendance ?? 0))[0];
+
+  if (attendanceLeader?.attendance) {
+    broken.push({
+      id: makeId("broken", `attendance-${attendanceLeader.id}`),
+      title: "Largest crowd at World Cup 2026",
+      previous_holder: "—",
+      new_holder: attendanceLeader.stadium ?? attendanceLeader.venue ?? "Stadium",
+      old_value: "—",
+      new_value: attendanceLeader.attendance.toLocaleString(),
+      match_id: attendanceLeader.id,
+      importance: "low",
+      explanation: `${attendanceLeader.home_team?.name} vs ${attendanceLeader.away_team?.name} drew ${attendanceLeader.attendance.toLocaleString()} fans — the biggest attendance recorded so far.`,
+      event_date: attendanceLeader.match_date,
+      created_at: NOW(),
+      updated_at: NOW(),
+      match: attendanceLeader,
+    });
+  }
+
   return broken.sort((a, b) => b.event_date.localeCompare(a.event_date));
 }
 
-function buildCreatedRecords(scorers: TournamentPlayerStat[], matches: Match[]): RecordCreated[] {
+function buildCreatedRecords(
+  scorers: TournamentPlayerStat[],
+  matches: Match[],
+  assisters: TournamentPlayerStat[]
+): RecordCreated[] {
   const created: RecordCreated[] = [];
   const fontaine = ALL_TIME_BENCHMARKS.find((b) => b.id === "single-tournament-goals")!;
 
@@ -252,6 +311,56 @@ function buildCreatedRecords(scorers: TournamentPlayerStat[], matches: Match[]):
       created_at: NOW(),
       updated_at: NOW(),
       match: teamHigh.match,
+    });
+  }
+
+  if (assisters.length > 0) {
+    const assistLeader = assisters[0];
+    if (assistLeader.assists >= 2) {
+      created.push({
+        id: makeId("created", "wc2026-assist-leader"),
+        title: "World Cup 2026 leading assister",
+        holder: assistLeader.name,
+        value: `${assistLeader.assists} assist${assistLeader.assists === 1 ? "" : "s"}`,
+        match_id: null,
+        description: `${assistLeader.name} (${assistLeader.team}) leads the assist chart at World Cup 2026.`,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+    }
+  }
+
+  const avgGoals =
+    completed.length > 0 ? (totalGoals / completed.length).toFixed(1) : null;
+  if (avgGoals && completed.length >= 5) {
+    created.push({
+      id: makeId("created", "wc2026-goal-rate"),
+      title: "World Cup 2026 goals per match",
+      holder: "Tournament average",
+      value: `${avgGoals} goals/match`,
+      match_id: null,
+      description: `${totalGoals} goals across ${completed.length} matches — averaging ${avgGoals} goals per game.`,
+      event_date: NOW(),
+      created_at: NOW(),
+      updated_at: NOW(),
+    });
+  }
+
+  const unbeaten = completed.filter(
+    (m) => m.home_score != null && m.away_score != null && m.home_score === m.away_score
+  );
+  if (unbeaten.length >= 3) {
+    created.push({
+      id: makeId("created", "wc2026-draws"),
+      title: "World Cup 2026 drawn matches",
+      holder: "Tournament total",
+      value: `${unbeaten.length} draws`,
+      match_id: null,
+      description: `${unbeaten.length} matches have ended level so far at World Cup 2026.`,
+      event_date: NOW(),
+      created_at: NOW(),
+      updated_at: NOW(),
     });
   }
 
@@ -424,7 +533,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
   const chases = buildCareerChases(scorers);
   const broken = buildBrokenRecords(chases, matches);
-  const created = buildCreatedRecords(scorers, matches);
+  const created = buildCreatedRecords(scorers, matches, assisters);
   const timeline = buildTimeline(broken, created, chases, scorers);
   const players = scorersToPlayers(scorers, assisters, fifaPhotos);
 
@@ -444,7 +553,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v2"],
+  ["wc2026-records-v3"],
   { revalidate: 300 }
 );
 

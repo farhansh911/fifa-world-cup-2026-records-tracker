@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MatchCard } from "@/components/matches/MatchCard";
 import { MatchScheduleList } from "@/components/matches/MatchScheduleList";
+import { MatchResultsList } from "@/components/matches/MatchResultsList";
 import { LiveMatchBoard } from "@/components/matches/LiveMatchBoard";
 import { cn } from "@/lib/utils";
 import type { Match } from "@/types/database";
@@ -133,15 +133,10 @@ export function MatchCenterTabs({
 
       {active === "results" && (
         <div>
-          {filteredCompleted.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCompleted.map((m) => (
-                <MatchCard key={m.id} match={m} variant="completed" />
-              ))}
-            </div>
-          ) : (
-            <p className="card p-10 text-center text-white/35 text-sm">No results in this group yet.</p>
-          )}
+          <p className="text-sm text-white/40 mb-6">
+            Final scores grouped by date — tap any match for stats and group standings.
+          </p>
+          <MatchResultsList matches={filteredCompleted} />
         </div>
       )}
     </div>

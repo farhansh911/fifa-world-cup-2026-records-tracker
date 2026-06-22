@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/records/broken", label: "Records Broken" },
   { href: "/records/new", label: "New Records" },
   { href: "/matches", label: "Matches" },
+  { href: "/bracket", label: "Bracket" },
   { href: "/golden-boot", label: "Golden Boot" },
   { href: "/timeline", label: "Timeline" },
   { href: "/teams", label: "Teams" },

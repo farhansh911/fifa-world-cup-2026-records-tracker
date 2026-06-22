@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createMetadata } from "@/lib/seo";
 import { MatchDetailScores } from "@/components/matches/MatchDetailScores";
 import { MatchDetailStats } from "@/components/matches/MatchDetailStats";
+import { MatchGroupStandings } from "@/components/matches/MatchGroupStandings";
 import { GroupBadge } from "@/components/matches/GroupBadge";
 import { LiveMatchBoard } from "@/components/matches/LiveMatchBoard";
 import { getMatch, getMatchLiveView } from "@/lib/data";
@@ -47,7 +48,7 @@ export default async function MatchDetailPage({ params }: Props) {
   const isLive = (display?.status ?? match.status) === "live";
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <Link href="/matches" className="text-accent text-sm hover:underline mb-6 inline-block">
         ← Back to schedule
       </Link>
@@ -94,6 +95,14 @@ export default async function MatchDetailPage({ params }: Props) {
         </div>
 
         {!isLive && <MatchDetailStats matchId={match.id} initialView={display} />}
+
+        {match.group_name && (
+          <MatchGroupStandings
+            group={match.group_name}
+            homeTeam={home.name}
+            awayTeam={away.name}
+          />
+        )}
       </article>
     </div>
   );

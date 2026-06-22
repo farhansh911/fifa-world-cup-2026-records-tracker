@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/records/broken`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/records/new`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/matches`, changeFrequency: "hourly", priority: 0.9 },
+    { url: `${base}/bracket`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/golden-boot`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/timeline`, changeFrequency: "hourly", priority: 0.8 },
     { url: `${base}/teams`, changeFrequency: "daily", priority: 0.8 },
