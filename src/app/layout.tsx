@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { LiveScoresProvider } from "@/components/providers/LiveScoresProvider";
 import { ConditionalShell } from "@/components/layout/ConditionalShell";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ConditionalShell>{children}</ConditionalShell>
           </LiveScoresProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
