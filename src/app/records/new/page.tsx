@@ -17,7 +17,7 @@ export default async function RecordsNewPage() {
 
   return (
     <>
-      <PageBanner badge="New" title="New records" subtitle="First-time records set at World Cup 2026." />
+      <PageBanner badge="New" title="New records" subtitle="Every new World Cup 2026 record and milestone — hat-tricks, fastest goals, Golden Boot, and more. Auto-updated." />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {records.length > 0 ? (
           <Reveal className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

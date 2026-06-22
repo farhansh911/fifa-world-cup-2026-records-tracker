@@ -106,6 +106,21 @@ export const PRE_2026_CAREER_WC_GOALS: Record<string, number> = {
   "Jonathan David": 0,
 };
 
+/** World Cup assists before the 2026 tournament kicked off. */
+export const PRE_2026_CAREER_WC_ASSISTS: Record<string, number> = {
+  "Thomas Müller": 8,
+  "Lionel Messi": 3,
+  "Kylian Mbappé": 2,
+  "Kevin De Bruyne": 3,
+  "Harry Kane": 2,
+  "Bruno Fernandes": 2,
+  "Luka Modrić": 2,
+};
+
 export function careerGoalsBefore2026(playerName: string): number {
   return PRE_2026_CAREER_WC_GOALS[playerName] ?? 0;
+}
+
+export function careerAssistsBefore2026(playerName: string): number {
+  return PRE_2026_CAREER_WC_ASSISTS[playerName] ?? 0;
 }

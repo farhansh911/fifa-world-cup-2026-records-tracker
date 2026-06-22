@@ -2,9 +2,11 @@ import { unstable_cache } from "next/cache";
 import { fetchTournamentLeaders, type TournamentPlayerStat } from "@/lib/espn-stats";
 import { getCachedFifaPlayerPhotos, fifaPhotoFor, type FifaPhotoCatalog } from "@/lib/fifa-player-photos";
 import { getWorldCupMatches } from "@/lib/fixtures-api";
+import { getCachedMatchGoalHighlights, type MatchGoalHighlights } from "@/lib/match-goal-events";
 import {
   ALL_TIME_BENCHMARKS,
   careerGoalsBefore2026,
+  careerAssistsBefore2026,
   type HistoricalBenchmark,
 } from "@/lib/world-cup-benchmarks";
 import type {
@@ -90,7 +92,90 @@ function buildCareerChases(scorers: TournamentPlayerStat[]): RecordChase[] {
   return chases.sort((a, b) => b.currentValue - a.currentValue || a.goalsAway - b.goalsAway);
 }
 
-function buildBrokenRecords(chases: RecordChase[], matches: Match[]): RecordBroken[] {
+function buildSingleTournamentChases(scorers: TournamentPlayerStat[]): RecordChase[] {
+  const fontaine = ALL_TIME_BENCHMARKS.find((b) => b.id === "single-tournament-goals")!;
+  const chases: RecordChase[] = [];
+
+  for (const player of scorers) {
+    if (player.goals < fontaine.value - 3) continue;
+
+    const goalsAway = fontaine.value - player.goals;
+    let status: RecordChase["status"] = "chasing";
+    if (player.goals > fontaine.value) status = "broken";
+    else if (player.goals === fontaine.value) status = "tied";
+
+    chases.push({
+      id: makeId("chase-tournament", `${player.athleteId}-fontaine`),
+      benchmarkId: fontaine.id,
+      title: fontaine.title,
+      player: player.name,
+      team: player.team,
+      currentValue: player.goals,
+      recordValue: fontaine.value,
+      recordHolder: fontaine.holder,
+      goalsAway: Math.max(0, goalsAway),
+      status,
+      importance: fontaine.importance,
+      tournamentGoals: player.goals,
+      careerGoals: careerGoalsBefore2026(player.name),
+      explanation:
+        status === "broken"
+          ? `${player.name} scored ${player.goals} goals at World Cup 2026 — passing Just Fontaine's single-tournament record of ${fontaine.value} (1958).`
+          : status === "tied"
+            ? `${player.name} has ${player.goals} goals at WC 2026 — level with Fontaine's record of ${fontaine.value}.`
+            : `${player.name} has ${player.goals} goals at WC 2026. ${goalsAway} behind Fontaine's record of ${fontaine.value}.`,
+    });
+  }
+
+  return chases.sort((a, b) => b.currentValue - a.currentValue);
+}
+
+function buildAssistChases(assisters: TournamentPlayerStat[]): RecordChase[] {
+  const benchmark = ALL_TIME_BENCHMARKS.find((b) => b.id === "career-assists")!;
+  const chases: RecordChase[] = [];
+
+  for (const player of assisters) {
+    const career = careerAssistsBefore2026(player.name) + player.assists;
+    if (career < benchmark.value - 2) continue;
+
+    const away = benchmark.value - career;
+    let status: RecordChase["status"] = "chasing";
+    if (career > benchmark.value) status = "broken";
+    else if (career === benchmark.value) status = "tied";
+
+    chases.push({
+      id: makeId("chase-assists", player.athleteId),
+      benchmarkId: benchmark.id,
+      title: benchmark.title,
+      player: player.name,
+      team: player.team,
+      currentValue: career,
+      recordValue: benchmark.value,
+      recordHolder: benchmark.holder,
+      goalsAway: Math.max(0, away),
+      status,
+      importance: benchmark.importance,
+      tournamentGoals: player.assists,
+      careerGoals: careerAssistsBefore2026(player.name),
+      explanation:
+        status === "broken"
+          ? `${player.name} has ${career} career World Cup assists — passing ${benchmark.holder}'s record of ${benchmark.value}.`
+          : status === "tied"
+            ? `${player.name} has ${career} career World Cup assists — level with ${benchmark.holder}.`
+            : `${player.name} has ${career} career World Cup assists (${player.assists} at WC 2026). ${away} behind ${benchmark.holder}'s record.`,
+    });
+  }
+
+  return chases;
+}
+
+function buildBrokenRecords(
+  chases: RecordChase[],
+  tournamentChases: RecordChase[],
+  assistChases: RecordChase[],
+  matches: Match[],
+  highlights: MatchGoalHighlights
+): RecordBroken[] {
   const broken: RecordBroken[] = [];
   const completed = matches.filter((m) => m.status === "completed");
 
@@ -128,6 +213,27 @@ function buildBrokenRecords(chases: RecordChase[], matches: Match[]): RecordBrok
     });
   }
 
+  for (const chase of [...tournamentChases, ...assistChases].filter((c) => c.status === "broken" || c.status === "tied")) {
+    broken.push({
+      id: makeId("broken", chase.id),
+      title: chase.status === "tied" ? `Equaled: ${chase.title}` : chase.title,
+      previous_holder: chase.recordHolder,
+      new_holder: chase.status === "tied" ? `${chase.player} (joint with ${chase.recordHolder})` : chase.player,
+      old_value: `${chase.recordValue}`,
+      new_value: `${chase.currentValue}`,
+      match_id: null,
+      importance: chase.importance,
+      explanation: chase.explanation,
+      event_date: NOW(),
+      created_at: NOW(),
+      updated_at: NOW(),
+    });
+  }
+
+  const teamGoalsBenchmark = ALL_TIME_BENCHMARKS.find((b) => b.id === "team-goals-match")!;
+  const matchTotalBenchmark = ALL_TIME_BENCHMARKS.find((b) => b.id === "match-total-goals")!;
+  const marginBenchmark = ALL_TIME_BENCHMARKS.find((b) => b.id === "biggest-margin")!;
+
   const highScoring = completed
     .filter((m) => m.home_score != null && m.away_score != null)
     .map((m) => ({
@@ -138,18 +244,21 @@ function buildBrokenRecords(chases: RecordChase[], matches: Match[]): RecordBrok
     .sort((a, b) => b.total - a.total);
 
   const topMatch = highScoring[0];
-  if (topMatch && topMatch.total >= 7) {
+  if (topMatch && topMatch.total >= 5) {
     const m = topMatch.match;
+    const isAllTime = topMatch.total >= matchTotalBenchmark.value;
     broken.push({
       id: makeId("broken", `high-scoring-${m.id}`),
-      title: "Highest-scoring match at World Cup 2026",
-      previous_holder: "—",
+      title: isAllTime
+        ? "All-time record: most goals in a World Cup match"
+        : "Highest-scoring match at World Cup 2026",
+      previous_holder: isAllTime ? matchTotalBenchmark.holder : "—",
       new_holder: `${m.home_team?.name} vs ${m.away_team?.name}`,
-      old_value: "—",
+      old_value: isAllTime ? `${matchTotalBenchmark.value} goals` : "—",
       new_value: `${topMatch.total} goals`,
       match_id: m.id,
-      importance: "medium",
-      explanation: `${m.home_team?.name} ${m.home_score}–${m.away_score} ${m.away_team?.name} — the highest combined scoreline so far at this tournament.`,
+      importance: isAllTime ? "legendary" : topMatch.total >= 7 ? "medium" : "low",
+      explanation: `${m.home_team?.name} ${m.home_score}–${m.away_score} ${m.away_team?.name} — ${topMatch.total} combined goals${isAllTime ? ", breaking the all-time World Cup match record." : " — the highest scoreline so far at WC 2026."}`,
       event_date: m.match_date,
       created_at: NOW(),
       updated_at: NOW(),
@@ -171,22 +280,66 @@ function buildBrokenRecords(chases: RecordChase[], matches: Match[]): RecordBrok
     .sort((a, b) => b.margin - a.margin);
 
   const topMargin = margins[0];
-  if (topMargin && topMargin.margin >= 4) {
+  if (topMargin && topMargin.margin >= 3) {
     const m = topMargin.match;
+    const isAllTime = topMargin.margin >= marginBenchmark.value;
     broken.push({
       id: makeId("broken", `biggest-margin-${m.id}`),
-      title: "Biggest margin of victory at World Cup 2026",
-      previous_holder: "—",
+      title: isAllTime
+        ? "All-time record: biggest margin of victory at a World Cup"
+        : "Biggest margin of victory at World Cup 2026",
+      previous_holder: isAllTime ? marginBenchmark.holder : "—",
       new_holder: topMargin.winner,
-      old_value: "—",
+      old_value: isAllTime ? `${marginBenchmark.value}-goal margin` : "—",
       new_value: `${topMargin.margin}-goal win`,
       match_id: m.id,
-      importance: topMargin.margin >= 6 ? "high" : "medium",
-      explanation: `${topMargin.winner} won ${m.home_team?.name} ${m.home_score}–${m.away_score} ${m.away_team?.name} — the largest winning margin so far at this World Cup.`,
+      importance: isAllTime ? "legendary" : topMargin.margin >= 6 ? "high" : "medium",
+      explanation: `${topMargin.winner} won ${m.home_team?.name} ${m.home_score}–${m.away_score} ${m.away_team?.name} — a ${topMargin.margin}-goal margin${isAllTime ? ", matching or exceeding the all-time World Cup record." : " — the largest so far at WC 2026."}`,
       event_date: m.match_date,
       created_at: NOW(),
       updated_at: NOW(),
       match: m,
+    });
+  }
+
+  for (const m of completed) {
+    const home = m.home_score ?? 0;
+    const away = m.away_score ?? 0;
+    const maxTeam = Math.max(home, away);
+    if (maxTeam >= teamGoalsBenchmark.value) {
+      const teamName = home >= away ? m.home_team?.name : m.away_team?.name;
+      broken.push({
+        id: makeId("broken", `team-goals-alltime-${m.id}`),
+        title: "All-time record: most goals by one team in a World Cup match",
+        previous_holder: teamGoalsBenchmark.holder,
+        new_holder: teamName ?? "?",
+        old_value: `${teamGoalsBenchmark.value} goals`,
+        new_value: `${maxTeam} goals`,
+        match_id: m.id,
+        importance: "legendary",
+        explanation: `${teamName} scored ${maxTeam} in ${m.home_team?.name} ${home}–${away} ${m.away_team?.name} — equaling or breaking the all-time World Cup record.`,
+        event_date: m.match_date,
+        created_at: NOW(),
+        updated_at: NOW(),
+        match: m,
+      });
+    }
+  }
+
+  for (const ht of highlights.hatTricks.filter((h) => h.goals >= 4)) {
+    broken.push({
+      id: makeId("broken", `haul-${ht.player}-${ht.espnEventId}`),
+      title: "Four or more goals in a World Cup match",
+      previous_holder: "Just Fontaine / others",
+      new_holder: ht.player,
+      old_value: "4 goals (extremely rare)",
+      new_value: `${ht.goals} goals`,
+      match_id: null,
+      importance: "legendary",
+      explanation: `${ht.player} (${ht.team}) scored ${ht.goals} goals in ${ht.homeTeam} vs ${ht.awayTeam} — one of the greatest individual World Cup performances ever.`,
+      event_date: ht.matchDate,
+      created_at: NOW(),
+      updated_at: NOW(),
     });
   }
 
@@ -218,7 +371,9 @@ function buildBrokenRecords(chases: RecordChase[], matches: Match[]): RecordBrok
 function buildCreatedRecords(
   scorers: TournamentPlayerStat[],
   matches: Match[],
-  assisters: TournamentPlayerStat[]
+  assisters: TournamentPlayerStat[],
+  highlights: MatchGoalHighlights,
+  tournamentChases: RecordChase[]
 ): RecordCreated[] {
   const created: RecordCreated[] = [];
   const fontaine = ALL_TIME_BENCHMARKS.find((b) => b.id === "single-tournament-goals")!;
@@ -252,19 +407,32 @@ function buildCreatedRecords(
     }
 
     for (const player of scorers.filter((p) => p.goals >= fontaine.value - 2)) {
-      if (player.goals >= fontaine.value) {
-        created.push({
-          id: makeId("created", `fontaine-chase-${player.athleteId}`),
-          title: "Single-tournament goals record within reach",
-          holder: player.name,
-          value: `${player.goals} goals (record: ${fontaine.value})`,
-          match_id: null,
-          description: `${player.name} is chasing Just Fontaine's single-World-Cup record of ${fontaine.value} goals (1958).`,
-          event_date: NOW(),
-          created_at: NOW(),
-          updated_at: NOW(),
-        });
-      }
+      if (player.goals >= fontaine.value) continue;
+      created.push({
+        id: makeId("created", `fontaine-chase-${player.athleteId}`),
+        title: "Chasing Fontaine's single-tournament record",
+        holder: player.name,
+        value: `${player.goals} goals (${fontaine.value - player.goals} behind record)`,
+        match_id: null,
+        description: `${player.name} is chasing Just Fontaine's single-World-Cup record of ${fontaine.value} goals (1958).`,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+    }
+
+    for (const player of scorers.filter((p) => [5, 7, 10].includes(p.goals))) {
+      created.push({
+        id: makeId("created", `milestone-goals-${player.athleteId}-${player.goals}`),
+        title: `${player.goals} goals at World Cup 2026`,
+        holder: player.name,
+        value: `${player.goals} tournament goals`,
+        match_id: null,
+        description: `${player.name} (${player.team}) reached ${player.goals} goals at this World Cup — a major scoring milestone.`,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
     }
   }
 
@@ -299,14 +467,14 @@ function buildCreatedRecords(
     }))
     .sort((a, b) => b.teamGoals - a.teamGoals)[0];
 
-  if (teamHigh && teamHigh.teamGoals >= 6) {
+  if (teamHigh && teamHigh.teamGoals >= 3) {
     created.push({
       id: makeId("created", `team-goals-${teamHigh.match.id}`),
       title: "Most goals by one team in a WC 2026 match",
       holder: teamHigh.teamName,
       value: `${teamHigh.teamGoals} goals`,
       match_id: teamHigh.match.id,
-      description: `${teamHigh.teamName} scored ${teamHigh.teamGoals} in a single match at this World Cup.`,
+      description: `${teamHigh.teamName} scored ${teamHigh.teamGoals} in a single match — the most by any team at this World Cup so far.`,
       event_date: teamHigh.match.match_date,
       created_at: NOW(),
       updated_at: NOW(),
@@ -314,9 +482,99 @@ function buildCreatedRecords(
     });
   }
 
+  for (const ht of highlights.hatTricks) {
+    created.push({
+      id: makeId("created", `hattrick-${ht.player}-${ht.espnEventId}`),
+      title: ht.goals >= 4 ? "Four-goal haul at World Cup 2026" : "Hat-trick at World Cup 2026",
+      holder: ht.player,
+      value: `${ht.goals} goals in one match`,
+      match_id: null,
+      description: `${ht.player} (${ht.team}) scored ${ht.goals} goals in ${ht.homeTeam} vs ${ht.awayTeam}.`,
+      event_date: ht.matchDate,
+      created_at: NOW(),
+      updated_at: NOW(),
+    });
+  }
+
+  if (highlights.fastestGoal) {
+    const fg = highlights.fastestGoal;
+    created.push({
+      id: makeId("created", "wc2026-fastest-goal"),
+      title: "Fastest goal at World Cup 2026",
+      holder: fg.player,
+      value: `${fg.minute}'`,
+      match_id: null,
+      description: `${fg.player} (${fg.team}) scored after ${fg.minute} minutes in ${fg.homeTeam} vs ${fg.awayTeam} — the quickest goal of the tournament so far.`,
+      event_date: fg.matchDate,
+      created_at: NOW(),
+      updated_at: NOW(),
+    });
+  }
+
+  if (highlights.maxPlayerGoalsInMatch && highlights.maxPlayerGoalsInMatch.goals >= 2) {
+    const mp = highlights.maxPlayerGoalsInMatch;
+    created.push({
+      id: makeId("created", "wc2026-most-goals-one-match"),
+      title: "Most goals by one player in a WC 2026 match",
+      holder: mp.player,
+      value: `${mp.goals} goals`,
+      match_id: null,
+      description: `${mp.player} (${mp.team}) scored ${mp.goals} in ${mp.homeTeam} vs ${mp.awayTeam} — the best individual match return so far.`,
+      event_date: mp.matchDate,
+      created_at: NOW(),
+      updated_at: NOW(),
+    });
+  }
+
+  for (const milestone of [50, 100, 150, 200]) {
+    if (totalGoals >= milestone) {
+      created.push({
+        id: makeId("created", `tournament-goals-${milestone}`),
+        title: `${milestone} goals reached at World Cup 2026`,
+        holder: "Tournament milestone",
+        value: `${totalGoals} total goals`,
+        match_id: null,
+        description: `World Cup 2026 has passed ${milestone} total goals across ${completed.length} completed matches.`,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+    }
+  }
+
+  for (const milestone of [25, 50, 75, 100]) {
+    if (completed.length >= milestone) {
+      created.push({
+        id: makeId("created", `tournament-matches-${milestone}`),
+        title: `${milestone} matches completed at World Cup 2026`,
+        holder: "Tournament milestone",
+        value: `${completed.length} matches played`,
+        match_id: null,
+        description: `${completed.length} matches have been completed at World Cup 2026.`,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+    }
+  }
+
+  for (const chase of tournamentChases.filter((c) => c.status === "chasing" && c.goalsAway <= 3)) {
+    created.push({
+      id: makeId("created", `watch-${chase.id}`),
+      title: "Record watch: single-tournament goals",
+      holder: chase.player,
+      value: `${chase.currentValue} goals (${chase.goalsAway} to record)`,
+      match_id: null,
+      description: chase.explanation,
+      event_date: NOW(),
+      created_at: NOW(),
+      updated_at: NOW(),
+    });
+  }
+
   if (assisters.length > 0) {
     const assistLeader = assisters[0];
-    if (assistLeader.assists >= 2) {
+    if (assistLeader.assists >= 1) {
       created.push({
         id: makeId("created", "wc2026-assist-leader"),
         title: "World Cup 2026 leading assister",
@@ -371,6 +629,8 @@ function buildTimeline(
   broken: RecordBroken[],
   created: RecordCreated[],
   chases: RecordChase[],
+  tournamentChases: RecordChase[],
+  assistChases: RecordChase[],
   scorers: TournamentPlayerStat[]
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [];
@@ -391,7 +651,7 @@ function buildTimeline(
     });
   }
 
-  for (const r of created.slice(0, 5)) {
+  for (const r of created.slice(0, 12)) {
     events.push({
       id: makeId("timeline", r.id),
       event_type: "record_created",
@@ -407,7 +667,26 @@ function buildTimeline(
     });
   }
 
-  for (const chase of chases.filter((c) => c.status !== "chasing").slice(0, 3)) {
+  for (const chase of [...chases, ...tournamentChases, ...assistChases]
+    .filter((c) => c.status === "chasing" && c.goalsAway <= 2)
+    .slice(0, 5)) {
+    events.push({
+      id: makeId("timeline", `watch-${chase.id}`),
+      event_type: "milestone",
+      title: `Record watch: ${chase.player}`,
+      description: chase.explanation,
+      match_id: null,
+      player_id: null,
+      team_id: null,
+      event_date: NOW(),
+      metadata: { goalsAway: chase.goalsAway, record: chase.recordValue },
+      created_at: NOW(),
+    });
+  }
+
+  for (const chase of [...chases, ...tournamentChases, ...assistChases]
+    .filter((c) => c.status !== "chasing")
+    .slice(0, 5)) {
     events.push({
       id: makeId("timeline", chase.id),
       event_type: "milestone",
@@ -525,22 +804,26 @@ export interface RecordsSnapshot {
 }
 
 async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
-  const [{ scorers, assisters }, matches, fifaPhotos] = await Promise.all([
+  const [{ scorers, assisters }, matches, fifaPhotos, highlights] = await Promise.all([
     fetchTournamentLeaders(),
     getWorldCupMatches(),
     getCachedFifaPlayerPhotos(),
+    getCachedMatchGoalHighlights(),
   ]);
 
   const chases = buildCareerChases(scorers);
-  const broken = buildBrokenRecords(chases, matches);
-  const created = buildCreatedRecords(scorers, matches, assisters);
-  const timeline = buildTimeline(broken, created, chases, scorers);
+  const tournamentChases = buildSingleTournamentChases(scorers);
+  const assistChases = buildAssistChases(assisters);
+  const allChases = [...chases, ...tournamentChases, ...assistChases];
+  const broken = buildBrokenRecords(chases, tournamentChases, assistChases, matches, highlights);
+  const created = buildCreatedRecords(scorers, matches, assisters, highlights, tournamentChases);
+  const timeline = buildTimeline(broken, created, chases, tournamentChases, assistChases, scorers);
   const players = scorersToPlayers(scorers, assisters, fifaPhotos);
 
   return {
     broken,
     created,
-    chases,
+    chases: allChases,
     timeline,
     scorers: players,
     assisters: players
@@ -553,7 +836,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v3"],
+  ["wc2026-records-v4"],
   { revalidate: 300 }
 );
 
