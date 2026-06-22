@@ -143,7 +143,7 @@ export default async function HomePage() {
             <h3 className="text-sm font-semibold uppercase tracking-widest text-white/35 mb-4">Upcoming</h3>
             <Reveal className="space-y-3">
               {upcomingMatches.length > 0 ? (
-                upcomingMatches.map((m) => <MatchCard key={m.id} match={m} variant="upcoming" />)
+                upcomingMatches.map((m) => <MatchCard key={m.id} match={m} />)
               ) : (
                 <p className="card p-8 text-center text-white/35 text-sm">No upcoming matches.</p>
               )}
@@ -153,7 +153,7 @@ export default async function HomePage() {
             <h3 className="text-sm font-semibold uppercase tracking-widest text-white/35 mb-4">Results</h3>
             <Reveal className="space-y-3">
               {completedMatches.length > 0 ? (
-                completedMatches.map((m) => <MatchCard key={m.id} match={m} variant="completed" />)
+                completedMatches.map((m) => <MatchCard key={m.id} match={m} />)
               ) : (
                 <p className="card p-8 text-center text-white/35 text-sm">No results yet.</p>
               )}

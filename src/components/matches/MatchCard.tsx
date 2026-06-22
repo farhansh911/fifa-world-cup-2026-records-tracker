@@ -12,17 +12,19 @@ import type { Match } from "@/types/database";
 
 interface MatchCardProps {
   match: Match;
-  variant?: "live" | "upcoming" | "completed";
 }
 
-export function MatchCard({ match, variant }: MatchCardProps) {
+export function MatchCard({ match }: MatchCardProps) {
   const overlay = useLiveMatchOverlay(match.id);
 
-  const status = overlay?.status ?? variant ?? match.status;
+  const status = overlay?.status ?? match.status;
   const homeScore = overlay?.home.score ?? match.home_score;
   const awayScore = overlay?.away.score ?? match.away_score;
   const minute = overlay?.minute ?? match.minute;
   const isLive = status === "live";
+  const isScheduled = status === "scheduled" || status === "postponed";
+  const isCompleted = status === "completed";
+  const scoreLine = formatScoreLine(status, homeScore, awayScore);
   const group = match.group_name ?? match.home_team?.group_name;
   const goalLine =
     overlay && overlay.goals.length > 0
@@ -46,11 +48,11 @@ export function MatchCard({ match, variant }: MatchCardProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Badge variant={isLive ? "live" : "default"} className={getStatusColor(status)}>
-              {isLive && minute != null ? `${minute}'` : status}
+              {isLive && minute != null ? `${minute}'` : isScheduled ? "Upcoming" : isCompleted ? "FT" : status}
             </Badge>
             <GroupBadge group={group} />
           </div>
-          {!isLive && (status === "upcoming" || status === "scheduled") ? (
+          {!isLive && isScheduled ? (
             <MatchKickoffTime
               kickoffUtc={match.match_date}
               hostCity={match.host_city}
@@ -71,12 +73,16 @@ export function MatchCard({ match, variant }: MatchCardProps) {
           </div>
 
           <div className="font-display text-xl font-bold tabular-nums shrink-0 px-2">
-            {status === "scheduled" && !overlay ? (
+            {isScheduled && !overlay ? (
               <span className="text-white/25 text-sm">vs</span>
-            ) : formatScoreLine(status, homeScore, awayScore) ? (
-              <span>{formatScoreLine(status, homeScore, awayScore)}</span>
-            ) : (
+            ) : scoreLine ? (
+              <span>{scoreLine}</span>
+            ) : isCompleted ? (
               <span className="text-white/35 text-sm">FT</span>
+            ) : isLive ? (
+              <span className="text-white/35 text-sm">—</span>
+            ) : (
+              <span className="text-white/25 text-sm">vs</span>
             )}
           </div>
 
@@ -92,7 +98,7 @@ export function MatchCard({ match, variant }: MatchCardProps) {
           <p className="mt-3 text-xs text-white/35 truncate border-t border-white/[0.06] pt-3">{goalLine}</p>
         )}
 
-        {(match.stadium || match.venue) && (status === "upcoming" || status === "scheduled") && !overlay && (
+        {(match.stadium || match.venue) && isScheduled && !overlay && (
           <p className="mt-3 text-xs text-white/30 border-t border-white/[0.06] pt-3">{match.stadium || match.venue}</p>
         )}
       </article>

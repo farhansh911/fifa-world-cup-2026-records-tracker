@@ -96,7 +96,7 @@ export function formatScoreLine(
   homeScore: number | null,
   awayScore: number | null
 ): string | null {
-  if (status === "scheduled" || status === "postponed") return null;
+  if (status === "scheduled" || status === "postponed" || status === "upcoming") return null;
   if (!hasMatchScore(homeScore, awayScore)) return null;
   return `${homeScore}–${awayScore}`;
 }
