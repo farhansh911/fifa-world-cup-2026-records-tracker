@@ -132,18 +132,19 @@ export function MatchScheduleList({
                     key={match.id}
                     href={`/matches/${match.id}`}
                     className={cn(
-                      "flex items-center gap-3 sm:gap-4 px-4 py-3 sm:py-4 hover:bg-white/[0.03] transition-colors group",
+                      "flex items-center hover:bg-white/[0.03] transition-colors group",
+                      compact ? "gap-2 px-3 py-3" : "gap-3 sm:gap-4 px-4 py-3 sm:py-4",
                       match.status === "live" && "bg-red-500/[0.03]",
                       nextUp.some((n) => n.id === match.id) && match.status !== "live" && "bg-accent/[0.03]"
                     )}
                   >
-                    <div className={cn("shrink-0 text-right", compact ? "w-16" : "w-24")}>
+                    <div className={cn("shrink-0 text-right", compact ? "w-[4.25rem]" : "w-[4.5rem] sm:w-24")}>
                       <MatchKickoffTime
                         kickoffUtc={match.match_date}
                         hostCity={match.host_city}
                         variant="time"
-                        className="text-xs text-white/45"
-                        secondaryClassName="text-[9px]"
+                        className="text-[11px] sm:text-xs text-white/45 leading-tight"
+                        secondaryClassName="text-[8px] sm:text-[9px] leading-tight"
                       />
                       {match.group_name && (
                         <div className="mt-1 flex justify-end">
@@ -155,33 +156,33 @@ export function MatchScheduleList({
                       )}
                     </div>
 
-                    <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
-                      <div className="flex items-center gap-2 min-w-0 justify-end">
+                    <div className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2.5">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
                         <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
                           {match.home.name}
                         </span>
-                        <span className="text-sm font-medium sm:hidden">{match.home.code}</span>
-                        <TeamFlag {...match.home} size={compact ? 24 : 32} />
+                        <span className="text-xs font-semibold shrink-0 sm:hidden">{match.home.code}</span>
+                        <TeamFlag {...match.home} size={compact ? 22 : 28} className="shrink-0" />
                       </div>
 
-                      <div className="text-center shrink-0 px-1">
+                      <div className="shrink-0 flex items-center justify-center px-0.5">
                         {match.status === "scheduled" || match.status === "postponed" ? (
-                          <span className="text-xs text-white/30 font-medium">vs</span>
+                          <span className="text-[11px] text-white/30 font-medium leading-none">vs</span>
                         ) : formatScoreLine(match.status, match.home_score, match.away_score) ? (
-                          <span className="font-display font-bold tabular-nums text-sm sm:text-base">
+                          <span className="font-display font-bold tabular-nums text-sm sm:text-base leading-none">
                             {formatScoreLine(match.status, match.home_score, match.away_score)}
                           </span>
                         ) : (
-                          <span className="text-xs text-white/30 font-medium">FT</span>
+                          <span className="text-[11px] text-white/30 font-medium leading-none">FT</span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 min-w-0">
-                        <TeamFlag {...match.away} size={compact ? 24 : 32} />
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <TeamFlag {...match.away} size={compact ? 22 : 28} className="shrink-0" />
                         <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
                           {match.away.name}
                         </span>
-                        <span className="text-sm font-medium sm:hidden">{match.away.code}</span>
+                        <span className="text-xs font-semibold shrink-0 sm:hidden">{match.away.code}</span>
                       </div>
                     </div>
 

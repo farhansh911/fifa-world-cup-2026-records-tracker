@@ -71,7 +71,7 @@ export function MatchScheduleModal({ open, onClose, matches, title = "Match sche
         </div>
 
         <div className="overflow-y-auto flex-1 px-5 py-5">
-          <MatchScheduleList matches={matches} />
+          <MatchScheduleList matches={matches} compact showNextUp={false} showVenue={false} />
         </div>
 
         <div className="px-5 py-3 border-t border-white/[0.08] shrink-0">
