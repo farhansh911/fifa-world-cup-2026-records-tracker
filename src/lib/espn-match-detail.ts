@@ -64,6 +64,14 @@ function parseTeamStats(stats: Array<{ name: string; displayValue: string }>): T
   };
 }
 
+function playerNameFromGoalText(text: string): string {
+  return text
+    .trim()
+    .replace(/\s+-\s+.*$/, "")
+    .replace(/\s+(Own\s+Goal|Goal(\s+Assist.*)?)$/i, "")
+    .trim();
+}
+
 function parseGoals(keyEvents: Array<Record<string, unknown>>): GoalEvent[] {
   return keyEvents
     .filter((e) => e.scoringPlay === true)
@@ -74,7 +82,7 @@ function parseGoals(keyEvents: Array<Record<string, unknown>>): GoalEvent[] {
       const athlete =
         (e.participants as Array<{ athlete?: { displayName?: string; id?: string } }>)?.[0]
           ?.athlete;
-      const player = athlete?.displayName ?? text.split(" ")[0];
+      const player = athlete?.displayName ?? playerNameFromGoalText(text);
       return {
         minute: clock,
         player,

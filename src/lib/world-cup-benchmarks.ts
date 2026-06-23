@@ -84,6 +84,15 @@ export const ALL_TIME_BENCHMARKS: HistoricalBenchmark[] = [
     importance: "high",
     description: "Hungary beat El Salvador 10–1 at Spain 1982 (9-goal margin).",
   },
+  {
+    id: "tournaments-with-goal",
+    title: "Most FIFA World Cup tournaments with a goal",
+    holder: "5 editions (shared)",
+    value: 5,
+    unit: "tournaments",
+    importance: "legendary",
+    description: "Scoring in five different World Cup editions was the previous best — no player had reached six before 2026.",
+  },
 ];
 
 /** World Cup goals before the 2026 tournament kicked off (11 June 2026). */
@@ -118,9 +127,84 @@ export const PRE_2026_CAREER_WC_ASSISTS: Record<string, number> = {
 };
 
 export function careerGoalsBefore2026(playerName: string): number {
-  return PRE_2026_CAREER_WC_GOALS[playerName] ?? 0;
+  return PRE_2026_CAREER_WC_GOALS[resolveCanonicalPlayerName(playerName)] ?? 0;
 }
 
 export function careerAssistsBefore2026(playerName: string): number {
-  return PRE_2026_CAREER_WC_ASSISTS[playerName] ?? 0;
+  return PRE_2026_CAREER_WC_ASSISTS[resolveCanonicalPlayerName(playerName)] ?? 0;
+}
+
+/**
+ * World Cup editions (year) in which the player scored at least once, before 2026.
+ * Used to detect multi-tournament scoring milestones (e.g. Ronaldo scoring in a 6th World Cup).
+ */
+export const PRE_2026_WC_TOURNAMENTS_WITH_GOAL: Record<string, number[]> = {
+  "Cristiano Ronaldo": [2006, 2010, 2014, 2018, 2022],
+  "Lionel Messi": [2006, 2014, 2018, 2022],
+  "Luka Modrić": [2018, 2022],
+  "Thomas Müller": [2010, 2014, 2018, 2022],
+  "Olivier Giroud": [2014, 2018, 2022],
+  "Ángel Di María": [2014, 2022],
+  "Antoine Griezmann": [2014, 2018, 2022],
+  "Kylian Mbappé": [2018, 2022],
+  "Harry Kane": [2018, 2022],
+};
+
+const PRE_2026_TOURNAMENT_LOOKUP = new Map<string, number[]>(
+  Object.entries(PRE_2026_WC_TOURNAMENTS_WITH_GOAL).map(([name, years]) => [
+    name.toLowerCase(),
+    years,
+  ])
+);
+
+/** ESPN sometimes returns partial names — map to canonical keys in PRE_2026 tables. */
+const PLAYER_CANONICAL_ALIASES: Record<string, string> = {
+  cristiano: "Cristiano Ronaldo",
+  "c. ronaldo": "Cristiano Ronaldo",
+  messi: "Lionel Messi",
+  "l. messi": "Lionel Messi",
+  modric: "Luka Modrić",
+  "l. modric": "Luka Modrić",
+  müller: "Thomas Müller",
+  muller: "Thomas Müller",
+};
+
+export function resolveCanonicalPlayerName(playerName: string): string {
+  const trimmed = playerName.trim();
+  const lower = trimmed.toLowerCase();
+
+  if (PRE_2026_WC_TOURNAMENTS_WITH_GOAL[trimmed]) return trimmed;
+  if (PRE_2026_CAREER_WC_GOALS[trimmed]) return trimmed;
+
+  const alias = PLAYER_CANONICAL_ALIASES[lower];
+  if (alias) return alias;
+
+  for (const canonical of Object.keys(PRE_2026_WC_TOURNAMENTS_WITH_GOAL)) {
+    const canonicalLower = canonical.toLowerCase();
+    if (lower === canonicalLower || lower.includes(canonicalLower) || canonicalLower.includes(lower)) {
+      return canonical;
+    }
+    const lastName = canonical.split(" ").pop()?.toLowerCase();
+    if (lastName && lastName.length > 3 && lower.includes(lastName)) {
+      return canonical;
+    }
+  }
+
+  return trimmed;
+}
+
+export function wcTournamentYearsWithGoalBefore2026(playerName: string): number[] {
+  const canonical = resolveCanonicalPlayerName(playerName);
+  const direct = PRE_2026_WC_TOURNAMENTS_WITH_GOAL[canonical];
+  if (direct) return direct;
+
+  const lower = canonical.toLowerCase();
+  const exact = PRE_2026_TOURNAMENT_LOOKUP.get(lower);
+  if (exact) return exact;
+
+  return [];
+}
+
+export function wcTournamentsWithGoalBefore2026(playerName: string): number {
+  return wcTournamentYearsWithGoalBefore2026(playerName).length;
 }

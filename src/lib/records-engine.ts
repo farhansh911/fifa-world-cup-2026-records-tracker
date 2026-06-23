@@ -7,6 +7,8 @@ import {
   ALL_TIME_BENCHMARKS,
   careerGoalsBefore2026,
   careerAssistsBefore2026,
+  wcTournamentYearsWithGoalBefore2026,
+  wcTournamentsWithGoalBefore2026,
   type HistoricalBenchmark,
 } from "@/lib/world-cup-benchmarks";
 import type {
@@ -167,6 +169,111 @@ function buildAssistChases(assisters: TournamentPlayerStat[]): RecordChase[] {
   }
 
   return chases;
+}
+
+function formatTournamentYears(years: number[]): string {
+  return years.join(", ");
+}
+
+function buildMultiTournamentScoringRecords(scorers: TournamentPlayerStat[]): {
+  broken: RecordBroken[];
+  created: RecordCreated[];
+  chases: RecordChase[];
+} {
+  const benchmark = ALL_TIME_BENCHMARKS.find((b) => b.id === "tournaments-with-goal")!;
+  const broken: RecordBroken[] = [];
+  const created: RecordCreated[] = [];
+  const chases: RecordChase[] = [];
+
+  for (const player of scorers) {
+    if (player.goals <= 0) continue;
+
+    const previousYears = wcTournamentYearsWithGoalBefore2026(player.name);
+    const previousCount = previousYears.length;
+    if (previousCount === 0) continue;
+
+    const allYears = [...previousYears, 2026];
+    const total = allYears.length;
+    if (total < benchmark.value - 1) continue;
+
+    const away = benchmark.value - total;
+    let status: RecordChase["status"] = "chasing";
+    if (total > benchmark.value) status = "broken";
+    else if (total === benchmark.value) status = "tied";
+
+    const yearList = formatTournamentYears(allYears);
+    const explanation =
+      status === "broken"
+        ? `${player.name} scored at World Cup 2026 — the first player to find the net in ${total} different FIFA World Cup tournaments (${yearList}).`
+        : status === "tied"
+          ? `${player.name} scored at World Cup 2026 — joining the select group to score in ${total} World Cup editions (${yearList}).`
+          : `${player.name} has scored in ${total} World Cup tournaments (${yearList}). ${away} edition${away === 1 ? "" : "s"} behind the record of ${benchmark.value}.`;
+
+    const chase: RecordChase = {
+      id: makeId("chase-tournaments", player.athleteId),
+      benchmarkId: benchmark.id,
+      title: benchmark.title,
+      player: player.name,
+      team: player.team,
+      currentValue: total,
+      recordValue: benchmark.value,
+      recordHolder: benchmark.holder,
+      goalsAway: Math.max(0, away),
+      status,
+      importance: benchmark.importance,
+      tournamentGoals: player.goals,
+      careerGoals: careerGoalsBefore2026(player.name) + player.goals,
+      explanation,
+    };
+    chases.push(chase);
+
+    if (status === "broken") {
+      broken.push({
+        id: makeId("broken", chase.id),
+        title: benchmark.title,
+        previous_holder: benchmark.holder,
+        new_holder: player.name,
+        old_value: `${benchmark.value} tournaments`,
+        new_value: `${total} tournaments (${yearList})`,
+        match_id: null,
+        importance: benchmark.importance,
+        explanation,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+
+      created.push({
+        id: makeId("created", `six-wc-goals-${player.athleteId}`),
+        title: `First player to score in ${total} World Cups`,
+        holder: player.name,
+        value: `${total} tournaments (${yearList})`,
+        match_id: null,
+        description: explanation,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+    } else if (status === "tied") {
+      created.push({
+        id: makeId("created", `tied-wc-tournaments-${player.athleteId}`),
+        title: `Scored in ${total} World Cup tournaments`,
+        holder: player.name,
+        value: `${total} editions (${yearList})`,
+        match_id: null,
+        description: explanation,
+        event_date: NOW(),
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+    }
+  }
+
+  return {
+    broken,
+    created,
+    chases: chases.sort((a, b) => b.currentValue - a.currentValue || a.goalsAway - b.goalsAway),
+  };
 }
 
 function buildBrokenRecords(
@@ -814,10 +921,17 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
   const chases = buildCareerChases(scorers);
   const tournamentChases = buildSingleTournamentChases(scorers);
   const assistChases = buildAssistChases(assisters);
-  const allChases = [...chases, ...tournamentChases, ...assistChases];
-  const broken = buildBrokenRecords(chases, tournamentChases, assistChases, matches, highlights);
-  const created = buildCreatedRecords(scorers, matches, assisters, highlights, tournamentChases);
-  const timeline = buildTimeline(broken, created, chases, tournamentChases, assistChases, scorers);
+  const multiTournament = buildMultiTournamentScoringRecords(scorers);
+  const allChases = [...chases, ...tournamentChases, ...assistChases, ...multiTournament.chases];
+  const broken = [
+    ...buildBrokenRecords(chases, tournamentChases, assistChases, matches, highlights),
+    ...multiTournament.broken,
+  ];
+  const created = [
+    ...buildCreatedRecords(scorers, matches, assisters, highlights, tournamentChases),
+    ...multiTournament.created,
+  ];
+  const timeline = buildTimeline(broken, created, [...chases, ...multiTournament.chases], tournamentChases, assistChases, scorers);
   const players = scorersToPlayers(scorers, assisters, fifaPhotos);
 
   return {
@@ -836,7 +950,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v4"],
+  ["wc2026-records-v5"],
   { revalidate: 300 }
 );
 
