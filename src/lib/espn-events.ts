@@ -1,5 +1,5 @@
 import type { MatchStatus } from "@/types/database";
-import { buildDayMatchKey, buildMatchKey, canonicalTeamName } from "@/lib/team-aliases";
+import { buildDayMatchKey, buildMatchKey, canonicalTeamName, mapEspnMatchState } from "@/lib/team-aliases";
 
 const ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
 
@@ -37,10 +37,8 @@ interface EspnEvent {
   }>;
 }
 
-function mapState(state: string): MatchStatus {
-  if (state === "in") return "live";
-  if (state === "post") return "completed";
-  return "scheduled";
+function mapState(state: string, description: string): MatchStatus {
+  return mapEspnMatchState(state, description);
 }
 
 function parseMinute(displayClock?: string, clockSeconds?: number): number | null {
@@ -62,7 +60,7 @@ function parseEvent(event: EspnEvent): EspnEventRecord | null {
   const away = comp.competitors.find((c) => c.homeAway === "away");
   if (!home || !away) return null;
 
-  const status = mapState(comp.status.type.state);
+  const status = mapState(comp.status.type.state, comp.status.type.description);
   const kickoff = comp.date || event.date;
 
   return {

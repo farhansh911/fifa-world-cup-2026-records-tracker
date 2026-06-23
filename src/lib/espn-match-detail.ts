@@ -1,3 +1,5 @@
+import { mapEspnMatchState } from "@/lib/team-aliases";
+
 const ESPN_SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary";
 
 export interface TeamMatchStats {
@@ -123,8 +125,7 @@ export async function fetchEspnMatchDetail(eventId: string): Promise<EspnMatchDe
     if (!homeC || !awayC) return null;
 
     const state = comp.status.type.state;
-    const status =
-      state === "in" ? "live" : state === "post" ? "completed" : "scheduled";
+    const status = mapEspnMatchState(state, comp.status.type.description);
 
     let minute: number | null = null;
     const clockStr = comp.status.displayClock ?? comp.status.type.shortDetail ?? "";

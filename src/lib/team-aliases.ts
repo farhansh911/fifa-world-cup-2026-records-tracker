@@ -1,4 +1,6 @@
 /** Map external provider team labels to our canonical FIFA names. */
+import type { MatchStatus } from "@/types/database";
+
 const TEAM_ALIASES: Record<string, string> = {
   "South Korea": "Korea Republic",
   "Korea Republic": "Korea Republic",
@@ -89,6 +91,20 @@ export function isUpcomingKickoff(matchDate: string, now = Date.now()): boolean 
 
 export function hasMatchScore(homeScore: number | null, awayScore: number | null): boolean {
   return homeScore != null && awayScore != null;
+}
+
+/** Map ESPN status.type.state + description to our match status. */
+export function mapEspnMatchState(state: string, description = ""): MatchStatus {
+  const desc = description.toLowerCase();
+  if (state === "post") return "completed";
+  if (state === "in") return "live";
+  if (/suspend|halftime|half time|extra time|penalt|stoppage|intermission/i.test(desc)) return "live";
+  if (/postpon|cancel|abandon|delayed/i.test(desc)) return "postponed";
+  return "scheduled";
+}
+
+export function isInterruptedMatchStatus(statusDetail: string): boolean {
+  return /suspend|stoppage|weather|delay|halftime|half time|intermission/i.test(statusDetail.toLowerCase());
 }
 
 export function formatScoreLine(

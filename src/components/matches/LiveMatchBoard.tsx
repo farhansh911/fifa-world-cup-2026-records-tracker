@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import { useLiveScores } from "@/components/providers/LiveScoresProvider";
 import { cn } from "@/lib/utils";
+import { isInterruptedMatchStatus } from "@/lib/team-aliases";
 import type { LiveMatchView } from "@/lib/live-matches";
 
 interface LiveMatchBoardProps {
@@ -43,6 +44,7 @@ function StatBar({
 
 function LiveMatchCard({ match }: { match: LiveMatchView }) {
   const isLive = match.status === "live";
+  const interrupted = isInterruptedMatchStatus(match.statusDetail);
   const homePoss = match.homeStats.possession;
   const awayPoss = match.awayStats.possession;
 
@@ -58,8 +60,10 @@ function LiveMatchCard({ match }: { match: LiveMatchView }) {
         <div className="flex items-center gap-2">
           {isLive ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-red-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-              Live · {match.clock || `${match.minute}'`}
+              <span className={cn("w-1.5 h-1.5 rounded-full bg-red-400", !interrupted && "animate-pulse")} />
+              {interrupted
+                ? match.statusDetail
+                : `Live · ${match.clock || `${match.minute}'`}`}
             </span>
           ) : (
             <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
@@ -187,7 +191,7 @@ export function LiveMatchBoard({ initialLive = [], initialFeatured = null, compa
         )}
       </div>
 
-      <div className={cn("grid gap-4", !compact && "lg:grid-cols-2")}>
+      <div className={cn("grid gap-4", !compact && "md:grid-cols-2 xl:grid-cols-3")}>
         {display.map((m) => (
           <LiveMatchCard key={m.id} match={m} />
         ))}
