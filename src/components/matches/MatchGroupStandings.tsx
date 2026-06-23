@@ -18,11 +18,11 @@ export async function MatchGroupStandings({ group, homeTeam, awayTeam }: MatchGr
 
   return (
     <section className="mt-8 pt-8 border-t border-white/[0.08]">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/45">
           Group {group} standings
         </h2>
-        <a href={`/bracket?tab=groups&group=${group}`} className="text-xs text-accent hover:underline">
+        <a href={`/bracket?tab=groups&group=${group}`} className="text-xs text-accent hover:underline shrink-0">
           Full bracket →
         </a>
       </div>

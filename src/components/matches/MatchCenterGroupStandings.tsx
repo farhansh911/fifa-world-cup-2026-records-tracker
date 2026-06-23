@@ -9,10 +9,10 @@ interface MatchCenterGroupStandingsProps {
 export function MatchCenterGroupStandings({ standings }: MatchCenterGroupStandingsProps) {
   return (
     <section className="mt-10 pt-8 border-t border-white/[0.08]">
-      <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
           <h2 className="font-display text-lg font-bold">Group {standings.group} standings</h2>
-          <p className="text-sm text-white/40 mt-1">
+          <p className="text-sm text-white/40 mt-1 hidden sm:block">
             Qualification status — top 2 plus best third-placed teams advance
           </p>
         </div>
