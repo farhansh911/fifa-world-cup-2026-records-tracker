@@ -7,6 +7,7 @@ import {
   ALL_TIME_BENCHMARKS,
   careerGoalsBefore2026,
   careerAssistsBefore2026,
+  resolveCanonicalPlayerName,
   wcTournamentYearsWithGoalBefore2026,
   wcTournamentsWithGoalBefore2026,
   type HistoricalBenchmark,
@@ -42,6 +43,70 @@ const NOW = () => new Date().toISOString();
 
 function makeId(prefix: string, slug: string): string {
   return `${prefix}-${slug.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
+}
+
+const IMPORTANCE_RANK: Record<ImportanceLevel, number> = {
+  legendary: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+/** Higher = more likely to appear first when dates tie. Player milestones beat generic tallies. */
+function recordHighlightScore(id: string): number {
+  if (/six-wc-goals|tied-wc-tournaments|hattrick|fastest-goal|most-goals-one|broken-chase-tournaments/.test(id)) {
+    return 100;
+  }
+  if (/broken-chase|broken-tied|four-goal|hattrick-broken/.test(id)) {
+    return 90;
+  }
+  if (/golden-boot|hot-streak|fontaine-chase|watch-|assist-leader|milestone-goals/.test(id)) {
+    return 40;
+  }
+  if (/wc2026-goal-tally|tournament-goals|tournament-matches|goal-rate|wc2026-draws|team-goals-/.test(id)) {
+    return 10;
+  }
+  return 50;
+}
+
+function sortBrokenRecords(records: RecordBroken[]): RecordBroken[] {
+  return [...records].sort((a, b) => {
+    const byDate = b.event_date.localeCompare(a.event_date);
+    if (byDate !== 0) return byDate;
+    const byImportance =
+      (IMPORTANCE_RANK[b.importance] ?? 0) - (IMPORTANCE_RANK[a.importance] ?? 0);
+    if (byImportance !== 0) return byImportance;
+    return recordHighlightScore(b.id) - recordHighlightScore(a.id);
+  });
+}
+
+function sortCreatedRecords(records: RecordCreated[]): RecordCreated[] {
+  return [...records].sort((a, b) => {
+    const byDate = b.event_date.localeCompare(a.event_date);
+    if (byDate !== 0) return byDate;
+    return recordHighlightScore(b.id) - recordHighlightScore(a.id);
+  });
+}
+
+function latestGoalMatchDate(
+  playerName: string,
+  highlights: MatchGoalHighlights
+): string | null {
+  const canonical = resolveCanonicalPlayerName(playerName).toLowerCase();
+  let latest: string | null = null;
+
+  for (const match of highlights.matches) {
+    for (const entry of match.playerGoals.values()) {
+      const name = resolveCanonicalPlayerName(entry.player).toLowerCase();
+      if (name === canonical || name.includes(canonical) || canonical.includes(name)) {
+        if (!latest || match.matchDate.localeCompare(latest) > 0) {
+          latest = match.matchDate;
+        }
+      }
+    }
+  }
+
+  return latest;
 }
 
 function careerTotal(player: TournamentPlayerStat): number {
@@ -175,7 +240,10 @@ function formatTournamentYears(years: number[]): string {
   return years.join(", ");
 }
 
-function buildMultiTournamentScoringRecords(scorers: TournamentPlayerStat[]): {
+function buildMultiTournamentScoringRecords(
+  scorers: TournamentPlayerStat[],
+  highlights: MatchGoalHighlights
+): {
   broken: RecordBroken[];
   created: RecordCreated[];
   chases: RecordChase[];
@@ -227,6 +295,8 @@ function buildMultiTournamentScoringRecords(scorers: TournamentPlayerStat[]): {
     };
     chases.push(chase);
 
+    const eventDate = latestGoalMatchDate(player.name, highlights) ?? NOW();
+
     if (status === "broken") {
       broken.push({
         id: makeId("broken", chase.id),
@@ -238,7 +308,7 @@ function buildMultiTournamentScoringRecords(scorers: TournamentPlayerStat[]): {
         match_id: null,
         importance: benchmark.importance,
         explanation,
-        event_date: NOW(),
+        event_date: eventDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -250,7 +320,7 @@ function buildMultiTournamentScoringRecords(scorers: TournamentPlayerStat[]): {
         value: `${total} tournaments (${yearList})`,
         match_id: null,
         description: explanation,
-        event_date: NOW(),
+        event_date: eventDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -262,7 +332,7 @@ function buildMultiTournamentScoringRecords(scorers: TournamentPlayerStat[]): {
         value: `${total} editions (${yearList})`,
         match_id: null,
         description: explanation,
-        event_date: NOW(),
+        event_date: eventDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -921,16 +991,16 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
   const chases = buildCareerChases(scorers);
   const tournamentChases = buildSingleTournamentChases(scorers);
   const assistChases = buildAssistChases(assisters);
-  const multiTournament = buildMultiTournamentScoringRecords(scorers);
+  const multiTournament = buildMultiTournamentScoringRecords(scorers, highlights);
   const allChases = [...chases, ...tournamentChases, ...assistChases, ...multiTournament.chases];
-  const broken = [
+  const broken = sortBrokenRecords([
     ...buildBrokenRecords(chases, tournamentChases, assistChases, matches, highlights),
     ...multiTournament.broken,
-  ];
-  const created = [
+  ]);
+  const created = sortCreatedRecords([
     ...buildCreatedRecords(scorers, matches, assisters, highlights, tournamentChases),
     ...multiTournament.created,
-  ];
+  ]);
   const timeline = buildTimeline(broken, created, [...chases, ...multiTournament.chases], tournamentChases, assistChases, scorers);
   const players = scorersToPlayers(scorers, assisters, fifaPhotos);
 
@@ -950,7 +1020,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v5"],
+  ["wc2026-records-v6"],
   { revalidate: 300 }
 );
 
