@@ -156,43 +156,56 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
                     )}
                   </div>
 
-                  <Link href={`/matches/${displayMatch.id}`} className="block space-y-3 group">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <TeamFlag {...displayMatch.home} size={32} />
-                        <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                          {displayMatch.home.name}
-                        </span>
+                  <Link href={`/matches/${displayMatch.id}`} className="block group">
+                    {displayMatch.status === "scheduled" ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TeamFlag {...displayMatch.home} size={32} />
+                          <span className="text-sm font-medium group-hover:text-accent transition-colors">
+                            {displayMatch.home.name}
+                          </span>
+                        </div>
+                        <p className="text-center text-xs text-white/30">vs</p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TeamFlag {...displayMatch.away} size={32} />
+                          <span className="text-sm font-medium group-hover:text-accent transition-colors">
+                            {displayMatch.away.name}
+                          </span>
+                        </div>
                       </div>
-                      {displayMatch.status !== "scheduled" && (
-                        <span className="font-display text-xl font-bold tabular-nums">
-                          {formatScoreLine(
-                            displayMatch.status,
-                            displayMatch.homeScore,
-                            displayMatch.awayScore
-                          )?.split("–")[0] ?? "—"}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <TeamFlag {...displayMatch.away} size={32} />
-                        <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                          {displayMatch.away.name}
-                        </span>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <TeamFlag {...displayMatch.home} size={32} />
+                            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
+                              {displayMatch.home.name}
+                            </span>
+                          </div>
+                          <span className="font-display text-xl font-bold tabular-nums">
+                            {formatScoreLine(
+                              displayMatch.status,
+                              displayMatch.homeScore,
+                              displayMatch.awayScore
+                            )?.split("–")[0] ?? "—"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <TeamFlag {...displayMatch.away} size={32} />
+                            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
+                              {displayMatch.away.name}
+                            </span>
+                          </div>
+                          <span className="font-display text-xl font-bold tabular-nums">
+                            {formatScoreLine(
+                              displayMatch.status,
+                              displayMatch.homeScore,
+                              displayMatch.awayScore
+                            )?.split("–")[1] ?? "—"}
+                          </span>
+                        </div>
                       </div>
-                      {displayMatch.status !== "scheduled" && (
-                        <span className="font-display text-xl font-bold tabular-nums">
-                          {formatScoreLine(
-                            displayMatch.status,
-                            displayMatch.homeScore,
-                            displayMatch.awayScore
-                          )?.split("–")[1] ?? "—"}
-                        </span>
-                      )}
-                    </div>
-                    {displayMatch.status === "scheduled" && (
-                      <p className="text-center text-xs text-white/30 pt-2 border-t border-white/[0.06]">vs</p>
                     )}
                   </Link>
 
