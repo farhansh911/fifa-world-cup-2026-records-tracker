@@ -64,16 +64,43 @@ export function MatchCard({ match }: MatchCardProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="flex-1 flex items-center gap-1.5 min-w-0 justify-end">
-            <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
+        {/* Mobile: centered compact row */}
+        <div className="sm:hidden flex items-center justify-center gap-2.5 w-full">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <TeamFlag {...home} size={28} className="shrink-0" />
+            <span className="text-xs font-semibold">{home.code}</span>
+          </div>
+
+          <div className="font-display font-bold tabular-nums shrink-0 leading-none">
+            {isScheduled && !overlay ? (
+              <span className="text-white/25 text-xs">vs</span>
+            ) : scoreLine ? (
+              <span className="text-base">{scoreLine}</span>
+            ) : isCompleted ? (
+              <span className="text-white/35 text-xs">FT</span>
+            ) : isLive ? (
+              <span className="text-white/35 text-xs">—</span>
+            ) : (
+              <span className="text-white/25 text-xs">vs</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-xs font-semibold">{away.code}</span>
+            <TeamFlag {...away} size={28} className="shrink-0" />
+          </div>
+        </div>
+
+        {/* Desktop: full names */}
+        <div className="hidden sm:flex items-center gap-3 min-w-0 w-full">
+          <div className="flex-1 flex items-center gap-2 min-w-0 justify-end">
+            <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors">
               {home.name}
             </span>
-            <span className="text-xs font-semibold shrink-0 sm:hidden">{home.code}</span>
             <TeamFlag {...home} size={32} className="shrink-0" />
           </div>
 
-          <div className="font-display text-lg sm:text-xl font-bold tabular-nums shrink-0 px-1 leading-none">
+          <div className="font-display text-xl font-bold tabular-nums shrink-0 px-1 leading-none">
             {isScheduled && !overlay ? (
               <span className="text-white/25 text-sm">vs</span>
             ) : scoreLine ? (
@@ -87,12 +114,11 @@ export function MatchCard({ match }: MatchCardProps) {
             )}
           </div>
 
-          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+          <div className="flex-1 flex items-center gap-2 min-w-0">
             <TeamFlag {...away} size={32} className="shrink-0" />
-            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
+            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
               {away.name}
             </span>
-            <span className="text-xs font-semibold shrink-0 sm:hidden">{away.code}</span>
           </div>
         </div>
 

@@ -157,12 +157,35 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
                   </div>
 
                   <Link href={`/matches/${displayMatch.id}`} className="block group min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="sm:hidden flex items-center justify-center gap-2.5 w-full">
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <TeamFlag {...displayMatch.home} size={28} className="shrink-0" />
+                        <span className="text-xs font-semibold">{displayMatch.home.code}</span>
+                      </div>
+                      <div className="shrink-0">
+                        {displayMatch.status === "scheduled" ? (
+                          <span className="text-xs text-white/30 font-medium leading-none">vs</span>
+                        ) : (
+                          <span className="font-display text-base font-bold tabular-nums leading-none">
+                            {formatScoreLine(
+                              displayMatch.status,
+                              displayMatch.homeScore,
+                              displayMatch.awayScore
+                            ) ?? "—"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-xs font-semibold">{displayMatch.away.code}</span>
+                        <TeamFlag {...displayMatch.away} size={28} className="shrink-0" />
+                      </div>
+                    </div>
+
+                    <div className="hidden sm:flex items-center gap-2 min-w-0 w-full">
                       <div className="flex-1 flex items-center gap-1.5 min-w-0 justify-end">
-                        <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
+                        <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors">
                           {displayMatch.home.name}
                         </span>
-                        <span className="text-xs font-semibold shrink-0 sm:hidden">{displayMatch.home.code}</span>
                         <TeamFlag {...displayMatch.home} size={28} className="shrink-0" />
                       </div>
 
@@ -182,10 +205,9 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
 
                       <div className="flex-1 flex items-center gap-1.5 min-w-0">
                         <TeamFlag {...displayMatch.away} size={28} className="shrink-0" />
-                        <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
+                        <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
                           {displayMatch.away.name}
                         </span>
-                        <span className="text-xs font-semibold shrink-0 sm:hidden">{displayMatch.away.code}</span>
                       </div>
                     </div>
                   </Link>
