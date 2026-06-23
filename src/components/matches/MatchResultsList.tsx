@@ -56,48 +56,61 @@ export function MatchResultsList({ matches }: MatchResultsListProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 min-w-0">
       {Object.entries(grouped).map(([date, dayMatches]) => (
-        <div key={date}>
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-white/35 mb-3 sticky top-0 bg-[#0c0818] py-2 z-10">
+        <div key={date} className="min-w-0">
+          <h3 className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-white/35 mb-3 sticky top-14 bg-[var(--theme-bg)] py-2 z-10 border-b border-white/[0.04] truncate">
             {date}
           </h3>
           <div className="divide-y divide-white/[0.06] border border-white/[0.08]">
             {dayMatches.map((match) => {
               const full = matches.find((m) => m.id === match.id);
               const goalLine = full?.goalscorers;
+              const scoreLine = formatScoreLine("completed", match.home_score, match.away_score);
 
               return (
                 <Link
                   key={match.id}
                   href={`/matches/${match.id}`}
-                  className="block px-4 sm:px-6 py-4 sm:py-5 hover:bg-white/[0.03] transition-colors group"
+                  className="block px-3 sm:px-6 py-3.5 sm:py-5 hover:bg-white/[0.03] transition-colors group min-w-0"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <TeamFlag {...match.home} size={40} />
-                      <span className="text-base font-medium truncate group-hover:text-accent transition-colors">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
+                      <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
                         {match.home.name}
                       </span>
+                      <span className="text-xs font-semibold shrink-0 sm:hidden">{match.home.code}</span>
+                      <TeamFlag {...match.home} size={36} className="shrink-0" />
                     </div>
 
-                    <div className="flex items-center justify-center gap-3 shrink-0">
-                      <span className="font-display text-2xl font-bold tabular-nums">
-                        {formatScoreLine("completed", match.home_score, match.away_score) ?? "—"}
+                    <div className="shrink-0 flex flex-col items-center px-1 sm:px-2">
+                      <span className="font-display text-lg sm:text-2xl font-bold tabular-nums leading-none">
+                        {scoreLine ?? "—"}
                       </span>
-                      {match.group_name && <GroupBadge group={match.group_name} />}
+                      {match.group_name && (
+                        <div className="mt-1.5 sm:hidden">
+                          <GroupBadge group={match.group_name} />
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-3 flex-1 min-w-0 sm:justify-end">
-                      <span className="text-base font-medium truncate text-right group-hover:text-accent transition-colors">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <TeamFlag {...match.away} size={36} className="shrink-0" />
+                      <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
                         {match.away.name}
                       </span>
-                      <TeamFlag {...match.away} size={40} />
+                      <span className="text-xs font-semibold shrink-0 sm:hidden">{match.away.code}</span>
                     </div>
+
+                    {match.group_name && (
+                      <div className="hidden sm:block shrink-0">
+                        <GroupBadge group={match.group_name} />
+                      </div>
+                    )}
                   </div>
 
                   {(goalLine || match.stadium) && (
-                    <p className={cn("mt-3 text-xs text-white/35", goalLine && "truncate")}>
+                    <p className={cn("mt-2.5 sm:mt-3 text-xs text-white/35", goalLine && "truncate")}>
                       {goalLine ?? match.stadium}
                     </p>
                   )}

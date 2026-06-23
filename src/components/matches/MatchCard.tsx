@@ -43,10 +43,10 @@ export function MatchCard({ match }: MatchCardProps) {
   };
 
   return (
-    <Link href={`/matches/${match.id}`} className="block group">
-      <article className={cn("card card-hover p-4", isLive && "border-red-500/30")}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+    <Link href={`/matches/${match.id}`} className="block group min-w-0">
+      <article className={cn("card card-hover p-3.5 sm:p-4 min-w-0", isLive && "border-red-500/30")}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <Badge variant={isLive ? "live" : "default"} className={getStatusColor(status)}>
               {isLive && minute != null ? `${minute}'` : isScheduled ? "Upcoming" : isCompleted ? "FT" : status}
             </Badge>
@@ -57,22 +57,23 @@ export function MatchCard({ match }: MatchCardProps) {
               kickoffUtc={match.match_date}
               hostCity={match.host_city}
               variant="dateTime"
-              className="text-xs text-white/35"
+              className="text-[10px] sm:text-xs text-white/35 leading-tight"
             />
           ) : (
-            <span className="text-xs text-white/35">{match.stadium || match.venue}</span>
+            <span className="text-[10px] sm:text-xs text-white/35 truncate">{match.stadium || match.venue}</span>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center gap-2 min-w-0">
-            <TeamFlag {...home} size={36} />
-            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex-1 flex items-center gap-1.5 min-w-0 justify-end">
+            <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
               {home.name}
             </span>
+            <span className="text-xs font-semibold shrink-0 sm:hidden">{home.code}</span>
+            <TeamFlag {...home} size={32} className="shrink-0" />
           </div>
 
-          <div className="font-display text-xl font-bold tabular-nums shrink-0 px-2">
+          <div className="font-display text-lg sm:text-xl font-bold tabular-nums shrink-0 px-1 leading-none">
             {isScheduled && !overlay ? (
               <span className="text-white/25 text-sm">vs</span>
             ) : scoreLine ? (
@@ -86,11 +87,12 @@ export function MatchCard({ match }: MatchCardProps) {
             )}
           </div>
 
-          <div className="flex-1 flex items-center gap-2 min-w-0 justify-end">
-            <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors">
+          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+            <TeamFlag {...away} size={32} className="shrink-0" />
+            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
               {away.name}
             </span>
-            <TeamFlag {...away} size={36} />
+            <span className="text-xs font-semibold shrink-0 sm:hidden">{away.code}</span>
           </div>
         </div>
 
@@ -99,7 +101,9 @@ export function MatchCard({ match }: MatchCardProps) {
         )}
 
         {(match.stadium || match.venue) && isScheduled && !overlay && (
-          <p className="mt-3 text-xs text-white/30 border-t border-white/[0.06] pt-3">{match.stadium || match.venue}</p>
+          <p className="mt-3 text-xs text-white/30 border-t border-white/[0.06] pt-3 truncate sm:hidden">
+            {match.stadium || match.venue}
+          </p>
         )}
       </article>
     </Link>

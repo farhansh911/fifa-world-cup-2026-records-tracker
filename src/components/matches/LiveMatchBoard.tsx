@@ -75,36 +75,52 @@ function Scoreboard({ match, large = false }: { match: LiveMatchView; large?: bo
   const href = match.id.startsWith("espn-") ? "/matches" : `/matches/${match.id}`;
 
   return (
-    <Link href={href} className="block group">
-      <div className={cn("flex items-center justify-between gap-4", large ? "py-2" : "py-4")}>
-        <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+    <Link href={href} className="block group min-w-0">
+      <div className={cn("flex items-center justify-between gap-2 sm:gap-4 min-w-0", large ? "py-1 sm:py-2" : "py-3 sm:py-4")}>
+        <div className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2 min-w-0">
+          <TeamFlag
+            name={match.home.name}
+            code={match.home.code}
+            flag_url={match.home.flag_url}
+            size={large ? 48 : 40}
+            className="sm:hidden"
+          />
           <TeamFlag
             name={match.home.name}
             code={match.home.code}
             flag_url={match.home.flag_url}
             size={large ? 56 : 48}
+            className="hidden sm:block"
           />
-          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors", large ? "text-base" : "text-sm")}>
+          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors px-1", large ? "text-sm sm:text-base" : "text-xs sm:text-sm")}>
             {match.home.name}
           </span>
         </div>
 
-        <div className="shrink-0 text-center px-2">
-          <div className={cn("font-display font-black tabular-nums tracking-tight", large ? "text-5xl sm:text-6xl" : "text-4xl sm:text-5xl")}>
+        <div className="shrink-0 text-center px-1 sm:px-2">
+          <div className={cn("font-display font-black tabular-nums tracking-tight leading-none", large ? "text-3xl sm:text-5xl lg:text-6xl" : "text-3xl sm:text-4xl lg:text-5xl")}>
             {match.home.score}
-            <span className="text-white/25 mx-1">–</span>
+            <span className="text-white/25 mx-0.5 sm:mx-1">–</span>
             {match.away.score}
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+        <div className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2 min-w-0">
+          <TeamFlag
+            name={match.away.name}
+            code={match.away.code}
+            flag_url={match.away.flag_url}
+            size={large ? 48 : 40}
+            className="sm:hidden"
+          />
           <TeamFlag
             name={match.away.name}
             code={match.away.code}
             flag_url={match.away.flag_url}
             size={large ? 56 : 48}
+            className="hidden sm:block"
           />
-          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors", large ? "text-base" : "text-sm")}>
+          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors px-1", large ? "text-sm sm:text-base" : "text-xs sm:text-sm")}>
             {match.away.name}
           </span>
         </div>
@@ -175,20 +191,20 @@ function LiveMatchCard({ match, wide = false }: { match: LiveMatchView; wide?: b
 
       {wide ? (
         <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-white/[0.06]">
-          <div className="px-6 py-6 flex flex-col justify-center">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 flex flex-col justify-center min-w-0">
             <Scoreboard match={match} large />
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 min-w-0">
             <MatchStats match={match} columns={2} />
           </div>
         </div>
       ) : (
         <>
-          <div className="px-4">
+          <div className="px-3 sm:px-4 min-w-0">
             <Scoreboard match={match} />
           </div>
           {(match.homeStats.possession > 0 || match.homeStats.shots > 0 || match.goals.length > 0) && (
-            <div className="px-4 pb-4 border-t border-white/[0.06] pt-4">
+            <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-white/[0.06] pt-3 sm:pt-4 min-w-0">
               <MatchStats match={match} />
             </div>
           )}
@@ -229,7 +245,7 @@ export function LiveMatchBoard({ initialLive = [], initialFeatured = null, compa
   const useWideCard = !compact && display.length === 1;
 
   return (
-    <div className={compact ? "space-y-4" : "space-y-6"}>
+    <div className={compact ? "space-y-4 min-w-0" : "space-y-5 sm:space-y-6 min-w-0"}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           {hasLive ? (

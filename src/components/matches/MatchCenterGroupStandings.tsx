@@ -8,7 +8,7 @@ interface MatchCenterGroupStandingsProps {
 
 export function MatchCenterGroupStandings({ standings }: MatchCenterGroupStandingsProps) {
   return (
-    <section className="mt-10 pt-8 border-t border-white/[0.08]">
+    <section className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-white/[0.08] min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
           <h2 className="font-display text-lg font-bold">Group {standings.group} standings</h2>

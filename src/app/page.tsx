@@ -120,25 +120,25 @@ export default async function HomePage() {
         upcomingSchedule={upcomingSchedule}
       />
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 border-b border-white/[0.06]">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 border-b border-white/[0.06] overflow-x-hidden min-w-0">
         <SectionHeading
           title="Live now"
-          action={<Link href="/matches" className="text-sm text-white/45 hover:text-white transition-colors">Match center →</Link>}
+          action={<Link href="/matches" className="text-sm text-white/45 hover:text-white transition-colors whitespace-nowrap">Match center →</Link>}
         />
         <LiveMatchBoardServer />
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden min-w-0">
         <StatsGrid stats={statItems} />
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 overflow-x-hidden min-w-0">
         <SectionHeading
           title="Match center"
-          action={<Link href="/matches" className="text-sm text-white/45 hover:text-white transition-colors">All matches →</Link>}
+          action={<Link href="/matches" className="text-sm text-white/45 hover:text-white transition-colors whitespace-nowrap">All matches →</Link>}
         />
 
-        <div className="grid lg:grid-cols-2 gap-10">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-10 min-w-0">
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-widest text-white/35 mb-4">Upcoming</h3>
             <Reveal className="space-y-3">
@@ -162,10 +162,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pb-24 border-t border-white/[0.06]">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 pb-16 sm:pb-24 border-t border-white/[0.06] overflow-x-hidden min-w-0">
         <SectionHeading
           title="Latest records broken"
-          action={<Link href="/records/broken" className="text-sm text-white/45 hover:text-white transition-colors">View all →</Link>}
+          action={<Link href="/records/broken" className="text-sm text-white/45 hover:text-white transition-colors whitespace-nowrap">View all →</Link>}
         />
         {recentRecords.length > 0 ? (
           <Reveal className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

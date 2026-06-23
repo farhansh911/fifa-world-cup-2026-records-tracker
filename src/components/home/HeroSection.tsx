@@ -80,18 +80,18 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
 
   return (
     <>
-      <section ref={container} className="relative border-b border-white/[0.08]">
+      <section ref={container} className="relative border-b border-white/[0.08] overflow-x-hidden">
         <div className="hero-grid-lines absolute inset-0 pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
-          <div className="grid lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] gap-12 lg:gap-16 items-start">
-            <div>
-              <p className="hero-tag inline-flex items-center gap-2 text-sm font-medium text-accent mb-6">
-                <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                Tournament live · USA · Canada · Mexico
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-24">
+          <div className="grid lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] gap-8 sm:gap-12 lg:gap-16 items-start min-w-0">
+            <div className="min-w-0">
+              <p className="hero-tag inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-accent mb-5 sm:mb-6">
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                <span className="leading-snug">Tournament live · USA · Canada · Mexico</span>
               </p>
 
-              <h1 className="font-display text-[2.75rem] sm:text-6xl lg:text-[3.5rem] xl:text-7xl font-black leading-[1.02] tracking-tight mb-6">
+              <h1 className="font-display text-[2.25rem] sm:text-6xl lg:text-[3.5rem] xl:text-7xl font-black leading-[1.02] tracking-tight mb-5 sm:mb-6">
                 {["World Cup 2026", "Record Tracker"].map((line) => (
                   <span key={line} className="block overflow-hidden pb-1">
                     <span className="hero-line-inner block">{line}</span>
@@ -99,21 +99,21 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
                 ))}
               </h1>
 
-              <p className="hero-body text-lg sm:text-xl text-white/55 leading-relaxed max-w-xl mb-10">
+              <p className="hero-body text-base sm:text-xl text-white/55 leading-relaxed max-w-xl mb-8 sm:mb-10">
                 Broken records, new milestones, live scores and stats — updated after every match.
               </p>
 
-              <div className="flex flex-wrap gap-3 mb-12">
+              <div className="flex flex-wrap gap-2.5 sm:gap-3 mb-8 sm:mb-12">
                 <Link
                   href="/records/broken"
-                  className="hero-btn inline-flex items-center px-6 py-3.5 bg-white text-[#0a0612] font-semibold text-sm hover:bg-white/90 transition-colors"
+                  className="hero-btn inline-flex items-center px-5 sm:px-6 py-3 sm:py-3.5 bg-white text-[#0a0612] font-semibold text-sm hover:bg-white/90 transition-colors"
                 >
                   View records
                 </Link>
                 <button
                   type="button"
                   onClick={() => setScheduleOpen(true)}
-                  className="hero-btn inline-flex items-center gap-2 px-6 py-3.5 border border-white/20 text-white font-semibold text-sm hover:border-white/40 hover:bg-white/5 transition-colors"
+                  className="hero-btn inline-flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 border border-white/20 text-white font-semibold text-sm hover:border-white/40 hover:bg-white/5 transition-colors"
                 >
                   <Calendar className="w-4 h-4" />
                   Match schedule
@@ -127,11 +127,11 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
               </div>
             </div>
 
-            <aside className="hero-panel space-y-3 lg:pt-8">
+            <aside className="hero-panel space-y-3 lg:pt-8 min-w-0">
               {displayMatch ? (
-                <div className="hero-panel-block card p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                <div className="hero-panel-block card p-4 sm:p-5 min-w-0">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35 shrink-0">
                       {displayMatch.status === "live" ? (
                         <span className="text-red-400 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
@@ -151,62 +151,43 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
                         kickoffUtc={displayMatch.matchDate}
                         hostCity={displayMatch.hostCity}
                         variant="dateTime"
-                        className="text-xs text-white/35"
+                        className="text-[10px] sm:text-xs text-white/35 leading-tight sm:text-right"
                       />
                     )}
                   </div>
 
-                  <Link href={`/matches/${displayMatch.id}`} className="block group">
-                    {displayMatch.status === "scheduled" ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <TeamFlag {...displayMatch.home} size={32} />
-                          <span className="text-sm font-medium group-hover:text-accent transition-colors">
-                            {displayMatch.home.name}
-                          </span>
-                        </div>
-                        <p className="text-center text-xs text-white/30">vs</p>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <TeamFlag {...displayMatch.away} size={32} />
-                          <span className="text-sm font-medium group-hover:text-accent transition-colors">
-                            {displayMatch.away.name}
-                          </span>
-                        </div>
+                  <Link href={`/matches/${displayMatch.id}`} className="block group min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex-1 flex items-center gap-1.5 min-w-0 justify-end">
+                        <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
+                          {displayMatch.home.name}
+                        </span>
+                        <span className="text-xs font-semibold shrink-0 sm:hidden">{displayMatch.home.code}</span>
+                        <TeamFlag {...displayMatch.home} size={28} className="shrink-0" />
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <TeamFlag {...displayMatch.home} size={32} />
-                            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                              {displayMatch.home.name}
-                            </span>
-                          </div>
-                          <span className="font-display text-xl font-bold tabular-nums">
+
+                      <div className="shrink-0 px-1 text-center">
+                        {displayMatch.status === "scheduled" ? (
+                          <span className="text-xs text-white/30 font-medium leading-none">vs</span>
+                        ) : (
+                          <span className="font-display text-lg sm:text-xl font-bold tabular-nums leading-none">
                             {formatScoreLine(
                               displayMatch.status,
                               displayMatch.homeScore,
                               displayMatch.awayScore
-                            )?.split("–")[0] ?? "—"}
+                            ) ?? "—"}
                           </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <TeamFlag {...displayMatch.away} size={32} />
-                            <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                              {displayMatch.away.name}
-                            </span>
-                          </div>
-                          <span className="font-display text-xl font-bold tabular-nums">
-                            {formatScoreLine(
-                              displayMatch.status,
-                              displayMatch.homeScore,
-                              displayMatch.awayScore
-                            )?.split("–")[1] ?? "—"}
-                          </span>
-                        </div>
+                        )}
                       </div>
-                    )}
+
+                      <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                        <TeamFlag {...displayMatch.away} size={28} className="shrink-0" />
+                        <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
+                          {displayMatch.away.name}
+                        </span>
+                        <span className="text-xs font-semibold shrink-0 sm:hidden">{displayMatch.away.code}</span>
+                      </div>
+                    </div>
                   </Link>
 
                   <button
@@ -234,19 +215,21 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
               )}
 
               {recordChase ? (
-                <Link href="/records/broken" className="hero-panel-block block card card-hover p-5">
+                <Link href="/records/broken" className="hero-panel-block block card card-hover p-4 sm:p-5 min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-highlight mb-2">
                     {recordChase.status === "tied" ? "Record tied" : recordChase.status === "broken" ? "Record broken" : "Record chase"}
                   </p>
-                  <p className="font-display font-bold leading-snug mb-3">{recordChase.player} vs {recordChase.recordHolder}</p>
+                  <p className="font-display font-bold text-base sm:text-lg leading-snug mb-3 line-clamp-2">
+                    {recordChase.player} vs {recordChase.recordHolder}
+                  </p>
                   <div className="flex items-end justify-between gap-3 mb-3">
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-[10px] uppercase text-white/35">Career WC goals</p>
-                      <p className="font-display text-2xl font-black text-accent tabular-nums">{recordChase.currentValue}</p>
+                      <p className="font-display text-xl sm:text-2xl font-black text-accent tabular-nums">{recordChase.currentValue}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className="text-[10px] uppercase text-white/35">Record</p>
-                      <p className="font-display text-2xl font-black text-white/45 tabular-nums">{recordChase.recordValue}</p>
+                      <p className="font-display text-xl sm:text-2xl font-black text-white/45 tabular-nums">{recordChase.recordValue}</p>
                     </div>
                   </div>
                   <p className="text-xs text-white/45 leading-relaxed">
@@ -272,15 +255,15 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
                 </div>
               )}
 
-              <div className="hero-panel-block grid grid-cols-2 gap-px bg-white/[0.08] border border-white/[0.08]">
+              <div className="hero-panel-block grid grid-cols-2 gap-px bg-white/[0.08] border border-white/[0.08] min-w-0">
                 {[
                   { label: "Matches", value: stats.matches_played },
                   { label: "Goals", value: stats.goals_scored },
                   { label: "Broken", value: stats.records_broken },
                   { label: "New", value: stats.records_created },
                 ].map(({ label, value }) => (
-                  <div key={label} className="bg-[#0c0818] p-4">
-                    <p className="font-display text-2xl font-bold tabular-nums">{value.toLocaleString()}</p>
+                  <div key={label} className="bg-[var(--theme-bg-elevated)] p-3 sm:p-4 min-w-0">
+                    <p className="font-display text-xl sm:text-2xl font-bold tabular-nums">{value.toLocaleString()}</p>
                     <p className="text-[10px] uppercase tracking-wider text-white/35 mt-0.5">{label}</p>
                   </div>
                 ))}

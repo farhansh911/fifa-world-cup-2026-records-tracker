@@ -72,14 +72,14 @@ export function StatsGrid({ stats }: StatsGridProps) {
   }, [stats]);
 
   return (
-    <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-white/[0.08] border border-white/[0.08]">
+    <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-white/[0.08] border border-white/[0.08] min-w-0">
       {stats.map(({ key, label, value, icon }) => {
         const Icon = iconMap[icon] ?? Calendar;
         return (
-          <div key={key} className="stat-card bg-[#0c0818] p-5 sm:p-6">
-            <Icon className="w-4 h-4 text-white/30 mb-3" strokeWidth={1.5} />
+          <div key={key} className="stat-card bg-[var(--theme-bg-elevated)] p-4 sm:p-6 min-w-0">
+            <Icon className="w-4 h-4 text-white/30 mb-2 sm:mb-3" strokeWidth={1.5} />
             <p
-              className="stat-num font-display text-2xl sm:text-3xl font-bold text-white tabular-nums"
+              className="stat-num font-display text-xl sm:text-2xl lg:text-3xl font-bold text-white tabular-nums"
               data-value={value}
             >
               0

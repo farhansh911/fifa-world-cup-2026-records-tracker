@@ -92,7 +92,7 @@ export function MatchScheduleList({
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       {showNextUp && nextUp.length > 0 && (
         <ScheduleNextUp matches={nextUp} onJumpToFull={jumpToFullSchedule} />
       )}
@@ -123,7 +123,7 @@ export function MatchScheduleList({
 
           return (
             <div key={date} id={headerId} className="scroll-mt-24">
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-white/35 mb-3 sticky top-14 bg-[var(--theme-bg-panel)] py-2 z-10 border-b border-white/[0.04]">
+              <h3 className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-white/35 mb-3 sticky top-14 bg-[var(--theme-bg)] py-2 z-10 border-b border-white/[0.04] truncate">
                 {date}
               </h3>
               <div className="divide-y divide-white/[0.06] border border-white/[0.08]">

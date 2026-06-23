@@ -68,14 +68,14 @@ export function MatchCenterTabs({
   );
 
   return (
-    <div>
-      <div className="flex gap-1 border-b border-white/[0.08] mb-6">
+    <div className="min-w-0 overflow-x-hidden">
+      <div className="flex gap-0 sm:gap-1 border-b border-white/[0.08] mb-5 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActive(tab.id)}
             className={cn(
-              "px-4 py-3 text-sm font-medium transition-colors relative",
+              "flex-1 sm:flex-none px-3 sm:px-4 py-3 text-sm font-medium transition-colors relative text-center",
               active === tab.id ? "text-white" : "text-white/40 hover:text-white/70"
             )}
           >
@@ -91,40 +91,42 @@ export function MatchCenterTabs({
       </div>
 
       {(active === "schedule" || active === "results") && groups.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          <button
-            type="button"
-            onClick={() => setGroupFilter("all")}
-            className={cn(
-              "px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors",
-              groupFilter === "all"
-                ? "bg-accent/20 text-accent border-accent/40"
-                : "border-white/10 text-white/45 hover:text-white/70"
-            )}
-          >
-            All groups
-          </button>
-          {groups.map((g) => (
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 mb-5 sm:mb-6 overflow-x-auto">
+          <div className="flex gap-2 w-max sm:w-auto sm:flex-wrap pb-1">
             <button
-              key={g}
               type="button"
-              onClick={() => setGroupFilter(g)}
+              onClick={() => setGroupFilter("all")}
               className={cn(
-                "px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors",
-                groupFilter === g
+                "px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors whitespace-nowrap shrink-0",
+                groupFilter === "all"
                   ? "bg-accent/20 text-accent border-accent/40"
                   : "border-white/10 text-white/45 hover:text-white/70"
               )}
             >
-              Group {g}
+              All groups
             </button>
-          ))}
+            {groups.map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGroupFilter(g)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors whitespace-nowrap shrink-0",
+                  groupFilter === g
+                    ? "bg-accent/20 text-accent border-accent/40"
+                    : "border-white/10 text-white/45 hover:text-white/70"
+                )}
+              >
+                Group {g}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {active === "schedule" && (
-        <div>
-          <p className="text-sm text-white/40 mb-6">
+        <div className="min-w-0">
+          <p className="text-sm text-white/40 mb-5 sm:mb-6">
             Next matches shown at the top — full fixture list below, starting from today.
           </p>
           <MatchScheduleList matches={filteredSchedule} />
@@ -144,8 +146,8 @@ export function MatchCenterTabs({
       )}
 
       {active === "results" && (
-        <div>
-          <p className="text-sm text-white/40 mb-6">
+        <div className="min-w-0">
+          <p className="text-sm text-white/40 mb-5 sm:mb-6">
             Final scores grouped by date — tap any match for stats and group standings.
           </p>
           <MatchResultsList matches={filteredCompleted} />
