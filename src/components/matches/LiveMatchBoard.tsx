@@ -18,125 +18,136 @@ function StatBar({
   home,
   away,
   suffix = "",
+  compact = false,
 }: {
   label: string;
   home: number;
   away: number;
   suffix?: string;
+  compact?: boolean;
 }) {
   const total = home + away || 1;
   const homePct = (home / total) * 100;
 
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", compact && "space-y-1")}>
       <div className="flex items-center justify-between text-xs tabular-nums">
         <span className="font-semibold w-8 text-left">{home}{suffix}</span>
         <span className="text-white/40 uppercase tracking-wider text-[10px]">{label}</span>
         <span className="font-semibold w-8 text-right">{away}{suffix}</span>
       </div>
-      <div className="flex h-1 overflow-hidden bg-white/[0.06]">
-        <div className="bg-accent transition-all duration-500" style={{ width: `${homePct}%` }} />
-        <div className="bg-white/20 flex-1" />
+      <div className="flex h-1 overflow-hidden bg-white/[0.06] rounded-full">
+        <div className="bg-accent transition-all duration-500 rounded-l-full" style={{ width: `${homePct}%` }} />
+        <div className="bg-white/20 flex-1 rounded-r-full" />
       </div>
     </div>
   );
 }
 
-function LiveMatchCard({ match }: { match: LiveMatchView }) {
-  const isLive = match.status === "live";
-  const interrupted = isInterruptedMatchStatus(match.statusDetail);
+function MatchHeader({ match, isLive, interrupted }: { match: LiveMatchView; isLive: boolean; interrupted: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
+      <div className="flex items-center gap-2 min-w-0">
+        {isLive ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-red-400 shrink-0">
+            <span className={cn("w-1.5 h-1.5 rounded-full bg-red-400", !interrupted && "animate-pulse")} />
+            {interrupted ? match.statusDetail : `Live · ${match.clock || `${match.minute}'`}`}
+          </span>
+        ) : (
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40 shrink-0">
+            {match.statusDetail}
+          </span>
+        )}
+        {match.stadium && (
+          <span className="text-[11px] text-white/35 truncate hidden sm:inline">· {match.stadium}</span>
+        )}
+      </div>
+      {match.venue && (
+        <span className="text-[11px] text-white/35 truncate shrink-0 max-w-[40%] hidden md:inline">
+          {match.venue}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function Scoreboard({ match, large = false }: { match: LiveMatchView; large?: boolean }) {
+  const href = match.id.startsWith("espn-") ? "/matches" : `/matches/${match.id}`;
+
+  return (
+    <Link href={href} className="block group">
+      <div className={cn("flex items-center justify-between gap-4", large ? "py-2" : "py-4")}>
+        <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+          <TeamFlag
+            name={match.home.name}
+            code={match.home.code}
+            flag_url={match.home.flag_url}
+            size={large ? 56 : 48}
+          />
+          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors", large ? "text-base" : "text-sm")}>
+            {match.home.name}
+          </span>
+        </div>
+
+        <div className="shrink-0 text-center px-2">
+          <div className={cn("font-display font-black tabular-nums tracking-tight", large ? "text-5xl sm:text-6xl" : "text-4xl sm:text-5xl")}>
+            {match.home.score}
+            <span className="text-white/25 mx-1">–</span>
+            {match.away.score}
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+          <TeamFlag
+            name={match.away.name}
+            code={match.away.code}
+            flag_url={match.away.flag_url}
+            size={large ? 56 : 48}
+          />
+          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors", large ? "text-base" : "text-sm")}>
+            {match.away.name}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function MatchStats({ match, columns = 1 }: { match: LiveMatchView; columns?: 1 | 2 }) {
   const homePoss = match.homeStats.possession;
   const awayPoss = match.awayStats.possession;
 
   return (
-    <article
-      className={cn(
-        "overflow-hidden border border-white/[0.08] bg-[#0f0b18]",
-        isLive && "ring-1 ring-red-500/40"
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
-        <div className="flex items-center gap-2">
-          {isLive ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-red-400">
-              <span className={cn("w-1.5 h-1.5 rounded-full bg-red-400", !interrupted && "animate-pulse")} />
-              {interrupted
-                ? match.statusDetail
-                : `Live · ${match.clock || `${match.minute}'`}`}
-            </span>
-          ) : (
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
-              {match.statusDetail}
-            </span>
-          )}
-        </div>
-        <span className="text-[11px] text-white/35 truncate max-w-[50%]">
-          {match.stadium || match.venue}
-        </span>
-      </div>
-
-      {/* Scoreboard */}
-      <Link href={match.id.startsWith("espn-") ? "/matches" : `/matches/${match.id}`} className="block px-4 py-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-            <TeamFlag name={match.home.name} code={match.home.code} flag_url={match.home.flag_url} size={48} />
-            <span className="text-sm font-semibold text-center truncate w-full">{match.home.name}</span>
-          </div>
-
-          <div className="shrink-0 text-center px-2">
-            <div className="font-display text-4xl sm:text-5xl font-black tabular-nums tracking-tight">
-              {match.home.score}
-              <span className="text-white/25 mx-1">–</span>
-              {match.away.score}
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-            <TeamFlag name={match.away.name} code={match.away.code} flag_url={match.away.flag_url} size={48} />
-            <span className="text-sm font-semibold text-center truncate w-full">{match.away.name}</span>
-          </div>
-        </div>
-      </Link>
-
-      {/* Possession — Apple Sports style */}
+    <div className="space-y-4">
       {(homePoss > 0 || awayPoss > 0) && (
-        <div className="px-4 pb-4">
+        <div>
           <div className="flex items-center justify-between text-xs mb-1.5 tabular-nums">
             <span className="font-bold">{homePoss}%</span>
             <span className="text-white/35 text-[10px] uppercase tracking-wider">Possession</span>
             <span className="font-bold">{awayPoss}%</span>
           </div>
-          <div className="flex h-2 overflow-hidden">
-            <div
-              className="bg-accent transition-all duration-700"
-              style={{ width: `${homePoss}%` }}
-            />
-            <div
-              className="bg-white/25 transition-all duration-700"
-              style={{ width: `${awayPoss}%` }}
-            />
+          <div className="flex h-2 overflow-hidden rounded-full">
+            <div className="bg-accent transition-all duration-700" style={{ width: `${homePoss}%` }} />
+            <div className="bg-white/25 transition-all duration-700" style={{ width: `${awayPoss}%` }} />
           </div>
         </div>
       )}
 
-      {/* Stats grid */}
-      <div className="px-4 pb-4 space-y-3 border-t border-white/[0.06] pt-4">
+      <div className={cn("gap-3", columns === 2 ? "grid sm:grid-cols-2 gap-x-6" : "space-y-3")}>
         <StatBar label="Shots" home={match.homeStats.shots} away={match.awayStats.shots} />
         <StatBar label="On target" home={match.homeStats.shotsOnTarget} away={match.awayStats.shotsOnTarget} />
         <StatBar label="Corners" home={match.homeStats.corners} away={match.awayStats.corners} />
         <StatBar label="Fouls" home={match.homeStats.fouls} away={match.awayStats.fouls} />
       </div>
 
-      {/* Goals */}
       {match.goals.length > 0 && (
-        <div className="border-t border-white/[0.06] px-4 py-3">
+        <div className="border-t border-white/[0.06] pt-3">
           <p className="text-[10px] uppercase tracking-wider text-white/35 mb-2">Goals</p>
-          <ul className="space-y-1.5">
+          <ul className={cn(columns === 2 && match.goals.length > 3 ? "grid sm:grid-cols-2 gap-x-4 gap-y-1.5" : "space-y-1.5")}>
             {match.goals.map((g, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
+              <li key={i} className="flex items-start gap-2 text-sm min-w-0">
                 <span className="text-accent font-bold tabular-nums shrink-0 w-8">{g.minute || "—"}</span>
-                <span className="text-white/70">
+                <span className="text-white/70 truncate">
                   <span className="text-white font-medium">{g.player}</span>
                   <span className="text-white/40 text-xs ml-1">({g.team})</span>
                 </span>
@@ -145,8 +156,54 @@ function LiveMatchCard({ match }: { match: LiveMatchView }) {
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+function LiveMatchCard({ match, wide = false }: { match: LiveMatchView; wide?: boolean }) {
+  const isLive = match.status === "live";
+  const interrupted = isInterruptedMatchStatus(match.statusDetail);
+
+  return (
+    <article
+      className={cn(
+        "overflow-hidden border border-white/[0.08] bg-[var(--theme-bg-elevated)] h-full",
+        isLive && "ring-1 ring-red-500/40"
+      )}
+    >
+      <MatchHeader match={match} isLive={isLive} interrupted={interrupted} />
+
+      {wide ? (
+        <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-white/[0.06]">
+          <div className="px-6 py-6 flex flex-col justify-center">
+            <Scoreboard match={match} large />
+          </div>
+          <div className="px-6 py-6">
+            <MatchStats match={match} columns={2} />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="px-4">
+            <Scoreboard match={match} />
+          </div>
+          {(match.homeStats.possession > 0 || match.homeStats.shots > 0 || match.goals.length > 0) && (
+            <div className="px-4 pb-4 border-t border-white/[0.06] pt-4">
+              <MatchStats match={match} />
+            </div>
+          )}
+        </>
+      )}
     </article>
   );
+}
+
+function liveGridClass(count: number, compact: boolean): string {
+  if (compact) return "grid gap-4 grid-cols-1";
+  if (count === 1) return "grid gap-4 grid-cols-1";
+  if (count === 2) return "grid gap-4 grid-cols-1 lg:grid-cols-2";
+  if (count === 3) return "grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3";
+  return "grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
 }
 
 export function LiveMatchBoard({ initialLive = [], initialFeatured = null, compact = false }: LiveMatchBoardProps) {
@@ -169,13 +226,15 @@ export function LiveMatchBoard({ initialLive = [], initialFeatured = null, compa
     );
   }
 
+  const useWideCard = !compact && display.length === 1;
+
   return (
     <div className={compact ? "space-y-4" : "space-y-6"}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           {hasLive ? (
             <>
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
               <span className="text-sm font-semibold">
                 {live.length} live match{live.length !== 1 ? "es" : ""}
               </span>
@@ -185,15 +244,15 @@ export function LiveMatchBoard({ initialLive = [], initialFeatured = null, compa
           )}
         </div>
         {updatedAt && (
-          <span className="text-[10px] text-white/30">
+          <span className="text-[10px] text-white/30 shrink-0">
             Updated {new Date(updatedAt).toLocaleTimeString()}
           </span>
         )}
       </div>
 
-      <div className={cn("grid gap-4", !compact && "md:grid-cols-2 xl:grid-cols-3")}>
+      <div className={liveGridClass(display.length, compact || useWideCard)}>
         {display.map((m) => (
-          <LiveMatchCard key={m.id} match={m} />
+          <LiveMatchCard key={m.id} match={m} wide={useWideCard} />
         ))}
       </div>
     </div>
