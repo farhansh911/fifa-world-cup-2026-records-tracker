@@ -42,9 +42,47 @@ export async function getUpcomingMatches(limit?: number): Promise<Match[]> {
   return limit ? upcoming.slice(0, limit) : upcoming;
 }
 
+/** Same kickoff window (within 1 hour) for concurrent fixtures. */
+const KICKOFF_WINDOW_MS = 60 * 60 * 1000;
+
+/** All live matches, or all upcoming matches in the next kickoff wave. */
+export function getConcurrentFeaturedMatches(matches: Match[]): Match[] {
+  const live = matches
+    .filter((m) => m.status === "live")
+    .sort((a, b) => a.match_date.localeCompare(b.match_date));
+  if (live.length > 0) return live;
+
+  const now = Date.now();
+  const upcoming = matches
+    .filter(
+      (m) =>
+        m.status === "scheduled" &&
+        isUpcomingKickoff(m.match_date, now)
+    )
+    .sort((a, b) => a.match_date.localeCompare(b.match_date));
+
+  if (upcoming.length === 0) return [];
+
+  const slotTime = new Date(upcoming[0].match_date).getTime();
+  return upcoming.filter(
+    (m) => Math.abs(new Date(m.match_date).getTime() - slotTime) <= KICKOFF_WINDOW_MS
+  );
+}
+
+export async function getFeaturedMatches(): Promise<Match[]> {
+  const matches = await fetchMatches();
+  const featured = getConcurrentFeaturedMatches(matches);
+  if (featured.length > 0) return featured;
+
+  const completed = matches
+    .filter((m) => m.status === "completed")
+    .sort((a, b) => b.match_date.localeCompare(a.match_date));
+  return completed.slice(0, 1);
+}
+
 export async function getNextMatch(): Promise<Match | null> {
-  const upcoming = await getUpcomingMatches(1);
-  return upcoming[0] ?? null;
+  const featured = await getFeaturedMatches();
+  return featured[0] ?? null;
 }
 
 export async function getCompletedMatches(limit = 6): Promise<Match[]> {

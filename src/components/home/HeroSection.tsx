@@ -41,26 +41,90 @@ export interface HeroRecord {
 
 interface HeroSectionProps {
   stats: HeroStats;
-  featuredMatch: HeroMatch | null;
+  featuredMatches: HeroMatch[];
   latestRecord: HeroRecord | null;
   recordChase: RecordChase | null;
   upcomingSchedule: ScheduleMatch[];
 }
 
-export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, upcomingSchedule }: HeroSectionProps) {
+function HeroFeaturedMatchRow({ match }: { match: HeroMatch }) {
+  const overlay = useLiveMatchOverlay(match.id);
+
+  const display = {
+    ...match,
+    status: overlay?.status ?? match.status,
+    homeScore: overlay?.home.score ?? match.homeScore,
+    awayScore: overlay?.away.score ?? match.awayScore,
+    minute: overlay?.minute ?? match.minute,
+  };
+
+  return (
+    <Link href={`/matches/${display.id}`} className="block group min-w-0">
+      {display.status === "live" && display.minute != null && (
+        <p className="text-[10px] font-bold text-red-400 tabular-nums mb-1.5">{display.minute}&apos;</p>
+      )}
+      <div className="sm:hidden flex items-center justify-center gap-2.5 w-full">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <TeamFlag {...display.home} size={26} className="shrink-0" />
+          <span className="text-xs font-semibold">{display.home.code}</span>
+        </div>
+        <div className="shrink-0">
+          {display.status === "scheduled" ? (
+            <span className="text-xs text-white/30 font-medium leading-none">vs</span>
+          ) : (
+            <span className="font-display text-base font-bold tabular-nums leading-none">
+              {formatScoreLine(display.status, display.homeScore, display.awayScore) ?? "—"}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-xs font-semibold">{display.away.code}</span>
+          <TeamFlag {...display.away} size={26} className="shrink-0" />
+        </div>
+      </div>
+
+      <div className="hidden sm:flex items-center gap-2 min-w-0 w-full">
+        <div className="flex-1 flex items-center gap-1.5 min-w-0 justify-end">
+          <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors">
+            {display.home.name}
+          </span>
+          <TeamFlag {...display.home} size={26} className="shrink-0" />
+        </div>
+        <div className="shrink-0 px-1 text-center">
+          {display.status === "scheduled" ? (
+            <span className="text-xs text-white/30 font-medium leading-none">vs</span>
+          ) : (
+            <span className="font-display text-lg font-bold tabular-nums leading-none">
+              {formatScoreLine(display.status, display.homeScore, display.awayScore) ?? "—"}
+            </span>
+          )}
+        </div>
+        <div className="flex-1 flex items-center gap-1.5 min-w-0">
+          <TeamFlag {...display.away} size={26} className="shrink-0" />
+          <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
+            {display.away.name}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+export function HeroSection({ stats, featuredMatches, latestRecord, recordChase, upcomingSchedule }: HeroSectionProps) {
   const container = useRef<HTMLElement>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const overlay = useLiveMatchOverlay(featuredMatch?.id ?? "");
 
-  const displayMatch = featuredMatch
-    ? {
-        ...featuredMatch,
-        status: overlay?.status ?? featuredMatch.status,
-        homeScore: overlay?.home.score ?? featuredMatch.homeScore,
-        awayScore: overlay?.away.score ?? featuredMatch.awayScore,
-        minute: overlay?.minute ?? featuredMatch.minute,
-      }
-    : null;
+  const primaryMatch = featuredMatches[0] ?? null;
+  const panelLabel =
+    primaryMatch?.status === "live"
+      ? featuredMatches.length > 1
+        ? `${featuredMatches.length} live now`
+        : "Live now"
+      : primaryMatch?.status === "scheduled"
+        ? featuredMatches.length > 1
+          ? "Up next"
+          : "Up next"
+        : "Latest result";
 
   useGSAP(
     () => {
@@ -128,89 +192,36 @@ export function HeroSection({ stats, featuredMatch, latestRecord, recordChase, u
             </div>
 
             <aside className="hero-panel space-y-3 lg:pt-8 min-w-0">
-              {displayMatch ? (
+              {featuredMatches.length > 0 ? (
                 <div className="hero-panel-block card p-4 sm:p-5 min-w-0">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35 shrink-0">
-                      {displayMatch.status === "live" ? (
+                      {primaryMatch?.status === "live" ? (
                         <span className="text-red-400 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                          Live now
+                          {panelLabel}
                         </span>
-                      ) : displayMatch.status === "scheduled" ? (
-                        "Up next"
                       ) : (
-                        "Latest result"
+                        panelLabel
                       )}
                     </p>
-                    {displayMatch.status === "live" && displayMatch.minute != null && (
-                      <span className="text-sm font-bold text-red-400 tabular-nums">{displayMatch.minute}&apos;</span>
-                    )}
-                    {displayMatch.status === "scheduled" && displayMatch.matchDate && (
+                    {primaryMatch?.status === "scheduled" && primaryMatch.matchDate && (
                       <MatchKickoffTime
-                        kickoffUtc={displayMatch.matchDate}
-                        hostCity={displayMatch.hostCity}
+                        kickoffUtc={primaryMatch.matchDate}
+                        hostCity={primaryMatch.hostCity}
                         variant="dateTime"
                         className="text-[10px] sm:text-xs text-white/35 leading-tight sm:text-right"
                       />
                     )}
                   </div>
 
-                  <Link href={`/matches/${displayMatch.id}`} className="block group min-w-0">
-                    <div className="sm:hidden flex items-center justify-center gap-2.5 w-full">
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <TeamFlag {...displayMatch.home} size={28} className="shrink-0" />
-                        <span className="text-xs font-semibold">{displayMatch.home.code}</span>
+                  <div className="space-y-3 divide-y divide-white/[0.06]">
+                    {featuredMatches.map((match, index) => (
+                      <div key={match.id} className={index > 0 ? "pt-3" : undefined}>
+                        <HeroFeaturedMatchRow match={match} />
                       </div>
-                      <div className="shrink-0">
-                        {displayMatch.status === "scheduled" ? (
-                          <span className="text-xs text-white/30 font-medium leading-none">vs</span>
-                        ) : (
-                          <span className="font-display text-base font-bold tabular-nums leading-none">
-                            {formatScoreLine(
-                              displayMatch.status,
-                              displayMatch.homeScore,
-                              displayMatch.awayScore
-                            ) ?? "—"}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-xs font-semibold">{displayMatch.away.code}</span>
-                        <TeamFlag {...displayMatch.away} size={28} className="shrink-0" />
-                      </div>
-                    </div>
-
-                    <div className="hidden sm:flex items-center gap-2 min-w-0 w-full">
-                      <div className="flex-1 flex items-center gap-1.5 min-w-0 justify-end">
-                        <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors">
-                          {displayMatch.home.name}
-                        </span>
-                        <TeamFlag {...displayMatch.home} size={28} className="shrink-0" />
-                      </div>
-
-                      <div className="shrink-0 px-1 text-center">
-                        {displayMatch.status === "scheduled" ? (
-                          <span className="text-xs text-white/30 font-medium leading-none">vs</span>
-                        ) : (
-                          <span className="font-display text-lg sm:text-xl font-bold tabular-nums leading-none">
-                            {formatScoreLine(
-                              displayMatch.status,
-                              displayMatch.homeScore,
-                              displayMatch.awayScore
-                            ) ?? "—"}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                        <TeamFlag {...displayMatch.away} size={28} className="shrink-0" />
-                        <span className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                          {displayMatch.away.name}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
+                    ))}
+                  </div>
 
                   <button
                     type="button"

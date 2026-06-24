@@ -14,12 +14,13 @@ import {
   getTournamentStats,
   getLiveMatches,
   getUpcomingMatches,
-  getNextMatch,
+  getFeaturedMatches,
   getCompletedMatches,
   getMatchSchedule,
   getRecordsBroken,
   getRecordChases,
 } from "@/lib/data";
+import type { HeroMatch } from "@/components/home/HeroSection";
 
 export const revalidate = 60;
 
@@ -43,13 +44,35 @@ async function safeFetch<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
+function toHeroMatch(match: Match): HeroMatch {
+  return {
+    id: match.id,
+    home: {
+      name: match.home_team?.name ?? "TBD",
+      code: match.home_team?.code ?? "?",
+      flag_url: match.home_team?.flag_url ?? null,
+    },
+    away: {
+      name: match.away_team?.name ?? "TBD",
+      code: match.away_team?.code ?? "?",
+      flag_url: match.away_team?.flag_url ?? null,
+    },
+    homeScore: match.home_score,
+    awayScore: match.away_score,
+    minute: match.minute,
+    status: match.status as HeroMatch["status"],
+    matchDate: match.match_date,
+    hostCity: match.host_city,
+  };
+}
+
 export default async function HomePage() {
-  const [stats, liveMatches, allUpcoming, nextMatch, completedMatches, recentRecords, fullSchedule, recordChases] =
+  const [stats, liveMatches, allUpcoming, featuredMatchSources, completedMatches, recentRecords, fullSchedule, recordChases] =
     await Promise.all([
       safeFetch(getTournamentStats, null),
       safeFetch(getLiveMatches, [] as Match[]),
       safeFetch(getUpcomingMatches, [] as Match[]),
-      safeFetch(getNextMatch, null),
+      safeFetch(getFeaturedMatches, [] as Match[]),
       safeFetch(() => getCompletedMatches(3), [] as Match[]),
       safeFetch(getRecordsBroken, [] as RecordBroken[]),
       safeFetch(getMatchSchedule, [] as Match[]),
@@ -70,29 +93,7 @@ export default async function HomePage() {
     { key: "attendance_total", label: "Attendance", value: s.attendance_total, icon: "chart" as const },
   ];
 
-  const featuredMatchSource = liveMatches[0] ?? nextMatch ?? upcomingMatches[0] ?? completedMatches[0] ?? null;
-
-  const heroFeaturedMatch = featuredMatchSource
-    ? {
-        id: featuredMatchSource.id,
-        home: {
-          name: featuredMatchSource.home_team?.name ?? "TBD",
-          code: featuredMatchSource.home_team?.code ?? "?",
-          flag_url: featuredMatchSource.home_team?.flag_url ?? null,
-        },
-        away: {
-          name: featuredMatchSource.away_team?.name ?? "TBD",
-          code: featuredMatchSource.away_team?.code ?? "?",
-          flag_url: featuredMatchSource.away_team?.flag_url ?? null,
-        },
-        homeScore: featuredMatchSource.home_score,
-        awayScore: featuredMatchSource.away_score,
-        minute: featuredMatchSource.minute,
-        status: featuredMatchSource.status as "live" | "scheduled" | "completed" | "postponed",
-        matchDate: featuredMatchSource.match_date,
-        hostCity: featuredMatchSource.host_city,
-      }
-    : null;
+  const heroFeaturedMatches = featuredMatchSources.map(toHeroMatch);
 
   const heroRecordChase = recordChases.find((c) => c.benchmarkId === "career-goals") ?? recordChases[0] ?? null;
 
@@ -114,7 +115,7 @@ export default async function HomePage() {
           records_broken: s.records_broken,
           records_created: s.records_created,
         }}
-        featuredMatch={heroFeaturedMatch}
+        featuredMatches={heroFeaturedMatches}
         latestRecord={heroLatestRecord}
         recordChase={heroRecordChase}
         upcomingSchedule={upcomingSchedule}

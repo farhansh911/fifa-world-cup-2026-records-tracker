@@ -37,6 +37,20 @@ const MATCHES_PER_TEAM = 3;
 const DIRECT_QUALIFIERS = 2;
 const BEST_THIRD_SLOTS = 8;
 
+interface GroupMatchResult {
+  home: string;
+  away: string;
+  homeGoals: number;
+  awayGoals: number;
+}
+
+interface TeamSimStats {
+  name: string;
+  points: number;
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
 function emptyRow(team: Team): Omit<GroupStandingRow, "position" | "qualification" | "qualificationLabel"> {
   return {
     teamId: team.id,
@@ -69,11 +83,206 @@ function maxPossiblePoints(row: GroupStandingRow): number {
   return row.points + remaining * 3;
 }
 
-function assignQualification(rows: GroupStandingRow[], isComplete: boolean): GroupStandingRow[] {
-  const sorted = sortRows(rows).map((r, i) => ({ ...r, position: i + 1 }));
+function miniLeagueStats(team: string, tiedTeams: string[], results: GroupMatchResult[]): TeamSimStats {
+  let points = 0;
+  let goalsFor = 0;
+  let goalsAgainst = 0;
+
+  for (const m of results) {
+    if (!tiedTeams.includes(m.home) || !tiedTeams.includes(m.away)) continue;
+    if (m.home !== team && m.away !== team) continue;
+
+    const isHome = m.home === team;
+    const gf = isHome ? m.homeGoals : m.awayGoals;
+    const ga = isHome ? m.awayGoals : m.homeGoals;
+    goalsFor += gf;
+    goalsAgainst += ga;
+    if (gf > ga) points += 3;
+    else if (gf === ga) points += 1;
+  }
+
+  return { name: team, points, goalsFor, goalsAgainst };
+}
+
+function compareTeamsFifa(a: string, b: string, tiedTeams: string[], results: GroupMatchResult[]): number {
+  const miniA = miniLeagueStats(a, tiedTeams, results);
+  const miniB = miniLeagueStats(b, tiedTeams, results);
+
+  if (miniA.points !== miniB.points) return miniB.points - miniA.points;
+
+  const gdA = miniA.goalsFor - miniA.goalsAgainst;
+  const gdB = miniB.goalsFor - miniB.goalsAgainst;
+  if (gdA !== gdB) return gdB - gdA;
+
+  if (miniA.goalsFor !== miniB.goalsFor) return miniB.goalsFor - miniA.goalsFor;
+
+  const fullA = miniLeagueStats(a, [a, b], results);
+  const fullB = miniLeagueStats(b, [a, b], results);
+  const fullGdA = fullA.goalsFor - fullA.goalsAgainst;
+  const fullGdB = fullB.goalsFor - fullB.goalsAgainst;
+  if (fullGdA !== fullGdB) return fullGdB - fullGdA;
+
+  return fullB.goalsFor - fullA.goalsFor || a.localeCompare(b);
+}
+
+function rankSimulatedTeams(stats: TeamSimStats[], results: GroupMatchResult[]): TeamSimStats[] {
+  const byName = new Map(stats.map((s) => [s.name, { ...s }]));
+  const names = [...byName.keys()].sort((a, b) => {
+    const sa = byName.get(a)!;
+    const sb = byName.get(b)!;
+    if (sa.points !== sb.points) return sb.points - sa.points;
+    const gdA = sa.goalsFor - sa.goalsAgainst;
+    const gdB = sb.goalsFor - sb.goalsAgainst;
+    if (gdA !== gdB) return gdB - gdA;
+    if (sa.goalsFor !== sb.goalsFor) return sb.goalsFor - sa.goalsFor;
+    return a.localeCompare(b);
+  });
+
+  const ranked: string[] = [];
+  for (let i = 0; i < names.length; ) {
+    let j = i + 1;
+    const points = byName.get(names[i])!.points;
+    while (j < names.length && byName.get(names[j])!.points === points) j++;
+
+    const tied = names.slice(i, j);
+    if (tied.length === 1) {
+      ranked.push(tied[0]);
+    } else {
+      ranked.push(...[...tied].sort((a, b) => compareTeamsFifa(a, b, tied, results)));
+    }
+    i = j;
+  }
+
+  return ranked.map((name) => byName.get(name)!);
+}
+
+function applySimResult(stats: Map<string, TeamSimStats>, result: GroupMatchResult): void {
+  const home = stats.get(result.home);
+  const away = stats.get(result.away);
+  if (!home || !away) return;
+
+  home.goalsFor += result.homeGoals;
+  home.goalsAgainst += result.awayGoals;
+  away.goalsFor += result.awayGoals;
+  away.goalsAgainst += result.homeGoals;
+
+  if (result.homeGoals > result.awayGoals) home.points += 3;
+  else if (result.homeGoals < result.awayGoals) away.points += 3;
+  else {
+    home.points += 1;
+    away.points += 1;
+  }
+}
+
+function buildSimStats(rows: GroupStandingRow[]): Map<string, TeamSimStats> {
+  return new Map(
+    rows.map((r) => [
+      r.name,
+      { name: r.name, points: r.points, goalsFor: r.goalsFor, goalsAgainst: r.goalsAgainst },
+    ])
+  );
+}
+
+function completedGroupResults(groupMatches: Match[]): GroupMatchResult[] {
+  return groupMatches
+    .filter((m) => m.status === "completed" && m.home_score != null && m.away_score != null)
+    .map((m) => ({
+      home: m.home_team!.name,
+      away: m.away_team!.name,
+      homeGoals: m.home_score!,
+      awayGoals: m.away_score!,
+    }));
+}
+
+function remainingGroupFixtures(groupMatches: Match[]): Array<{ home: string; away: string }> {
+  return groupMatches
+    .filter((m) => m.status !== "completed")
+    .map((m) => ({ home: m.home_team!.name, away: m.away_team!.name }));
+}
+
+/** Representative 1-0 / 0-0 results — enough for qualification math. */
+const SCENARIO_OUTCOMES: GroupMatchResult[] = [
+  { home: "", away: "", homeGoals: 1, awayGoals: 0 },
+  { home: "", away: "", homeGoals: 0, awayGoals: 0 },
+  { home: "", away: "", homeGoals: 0, awayGoals: 1 },
+];
+
+function collectPossiblePositions(
+  teamName: string,
+  rows: GroupStandingRow[],
+  groupMatches: Match[]
+): Set<number> {
+  const positions = new Set<number>();
+  const baseResults = completedGroupResults(groupMatches);
+  const remaining = remainingGroupFixtures(groupMatches);
+
+  if (remaining.length === 0) {
+    const ranked = rankSimulatedTeams([...buildSimStats(rows).values()], baseResults);
+    positions.add(ranked.findIndex((t) => t.name === teamName) + 1);
+    return positions;
+  }
+
+  function walk(index: number, results: GroupMatchResult[], stats: Map<string, TeamSimStats>): void {
+    if (index >= remaining.length) {
+      const ranked = rankSimulatedTeams([...stats.values()], results);
+      const pos = ranked.findIndex((t) => t.name === teamName) + 1;
+      positions.add(pos);
+      return;
+    }
+
+    const fixture = remaining[index];
+    for (const template of SCENARIO_OUTCOMES) {
+      const nextStats = new Map([...stats.entries()].map(([k, v]) => [k, { ...v }]));
+      const result: GroupMatchResult = {
+        home: fixture.home,
+        away: fixture.away,
+        homeGoals: template.homeGoals,
+        awayGoals: template.awayGoals,
+      };
+      applySimResult(nextStats, result);
+      walk(index + 1, [...results, result], nextStats);
+    }
+  }
+
+  walk(0, baseResults, buildSimStats(rows));
+  return positions;
+}
+
+function canFinishInTop(row: GroupStandingRow, rows: GroupStandingRow[], groupMatches: Match[], top: number): boolean {
+  const positions = collectPossiblePositions(row.name, rows, groupMatches);
+  for (const pos of positions) {
+    if (pos > 0 && pos <= top) return true;
+  }
+  return false;
+}
+
+/** True if the team is guaranteed a top-two finish (R32) even losing every remaining match. */
+function hasClinchedTopTwo(row: GroupStandingRow, sorted: GroupStandingRow[]): boolean {
+  if (row.position > 2) return false;
+  if (row.played >= MATCHES_PER_TEAM) return row.position <= 2;
 
   const third = sorted[2];
-  const fourth = sorted[3];
+  if (!third || third.teamId === row.teamId) return row.position <= 2;
+
+  const worstCasePoints = row.points;
+  const thirdMax = maxPossiblePoints(third);
+
+  if (worstCasePoints > thirdMax) return true;
+
+  if (worstCasePoints === thirdMax) {
+    if (row.goalDifference > third.goalDifference) return true;
+    if (row.goalDifference === third.goalDifference && row.goalsFor > third.goalsFor) return true;
+  }
+
+  return false;
+}
+
+function assignQualification(
+  rows: GroupStandingRow[],
+  isComplete: boolean,
+  groupMatches: Match[]
+): GroupStandingRow[] {
+  const sorted = sortRows(rows).map((r, i) => ({ ...r, position: i + 1 }));
 
   return sorted.map((row) => {
     let qualification: QualificationStatus = "pending";
@@ -97,42 +306,21 @@ function assignQualification(rows: GroupStandingRow[], isComplete: boolean): Gro
       return { ...row, qualification, qualificationLabel };
     }
 
-    const canCatchSecond =
-      row.position > 2 &&
-      third != null &&
-      maxPossiblePoints(row) >= third.points;
+    const canReachTopTwo = canFinishInTop(row, rows, groupMatches, DIRECT_QUALIFIERS);
+    const canReachThird = canFinishInTop(row, rows, groupMatches, 3);
 
-    const canCatchThird =
-      row.position > 3 &&
-      fourth != null &&
-      maxPossiblePoints(row) > (fourth?.points ?? 0);
-
-    if (row.position <= DIRECT_QUALIFIERS) {
-      const minPointsToDrop = sorted[2]?.points ?? 0;
-      const guaranteedTopTwo =
-        row.position === 1
-          ? maxPossiblePoints(sorted[1] ?? row) < row.points ||
-            (sorted[1] != null &&
-              maxPossiblePoints(sorted[1]) < row.points &&
-              row.goalDifference > (sorted[2]?.goalDifference ?? -999))
-          : maxPossiblePoints(sorted[2] ?? row) < row.points;
-
-      if (guaranteedTopTwo || row.played === MATCHES_PER_TEAM) {
-        qualification = "qualified";
-        qualificationLabel = "Round of 32";
-      } else {
-        qualification = "possible";
-        qualificationLabel = "Top 2";
-      }
-    } else if (row.position === 3 && (canCatchSecond || third != null)) {
-      qualification = canCatchSecond ? "possible" : "best-third";
-      qualificationLabel = canCatchSecond ? "Can reach top 2" : "Best 3rd place";
-    } else if (row.position === 3) {
+    if (hasClinchedTopTwo(row, sorted)) {
+      qualification = "qualified";
+      qualificationLabel = "Round of 32";
+    } else if (!canReachThird) {
+      qualification = "eliminated";
+      qualificationLabel = "Eliminated";
+    } else if (canReachTopTwo) {
+      qualification = "possible";
+      qualificationLabel = row.position <= DIRECT_QUALIFIERS ? "Top 2" : "Can reach top 2";
+    } else if (canReachThird) {
       qualification = "best-third";
       qualificationLabel = "Best 3rd place";
-    } else if (canCatchThird || canCatchSecond) {
-      qualification = "possible";
-      qualificationLabel = canCatchSecond ? "Can reach top 2" : "Still in hunt";
     } else {
       qualification = "eliminated";
       qualificationLabel = "Eliminated";
@@ -170,6 +358,44 @@ function markBestThirdPlace(groups: GroupStandings[]): GroupStandings[] {
   }));
 }
 
+/** While groups are still playing, highlight 3rd-place teams currently in the best-eight third-placed race. */
+function markLiveBestThirdPlace(groups: GroupStandings[]): GroupStandings[] {
+  const thirdCandidates = groups
+    .flatMap((g) =>
+      g.rows.filter(
+        (r) =>
+          r.played > 0 &&
+          !g.isComplete &&
+          r.qualification !== "qualified" &&
+          r.qualification !== "eliminated" &&
+          (r.position === 3 || r.qualification === "best-third")
+      )
+    );
+
+  if (thirdCandidates.length === 0) return groups;
+
+  const rankedThirds = sortRows(thirdCandidates).slice(0, BEST_THIRD_SLOTS);
+  const inTopEightThirds = new Set(rankedThirds.map((r) => r.teamId));
+
+  return groups.map((g) => {
+    if (g.isComplete) return g;
+    return {
+      ...g,
+      rows: g.rows.map((row) => {
+        if (row.qualification === "eliminated" || row.qualification === "qualified") return row;
+        if (inTopEightThirds.has(row.teamId)) {
+          return {
+            ...row,
+            qualification: "best-third" as const,
+            qualificationLabel: "Best 3rd place",
+          };
+        }
+        return row;
+      }),
+    };
+  });
+}
+
 export function buildGroupStandings(matches: Match[]): GroupStandings[] {
   const groupTeams = new Map<string, Map<string, Team>>();
 
@@ -189,9 +415,10 @@ export function buildGroupStandings(matches: Match[]): GroupStandings[] {
       rowMap.set(team.name, { ...emptyRow(team), position: 0, qualification: "pending", qualificationLabel: "" });
     }
 
-    const groupMatches = matches.filter(
-      (m) => m.group_name === group && m.status === "completed" && m.summary?.toLowerCase() === "group stage"
+    const allGroupMatches = matches.filter(
+      (m) => m.group_name === group && m.summary?.toLowerCase() === "group stage"
     );
+    const groupMatches = allGroupMatches.filter((m) => m.status === "completed");
 
     for (const m of groupMatches) {
       const home = m.home_team?.name;
@@ -241,11 +468,11 @@ export function buildGroupStandings(matches: Match[]): GroupStandings[] {
       matchesPlayed: groupMatches.length,
       matchesTotal,
       isComplete,
-      rows: assignQualification(rows, isComplete),
+      rows: assignQualification(rows, isComplete, allGroupMatches),
     });
   }
 
-  return markBestThirdPlace(standings);
+  return markLiveBestThirdPlace(markBestThirdPlace(standings));
 }
 
 export function getGroupStandingsForGroup(matches: Match[], group: string): GroupStandings | null {
@@ -257,16 +484,20 @@ export function resolveKnockoutTeamName(label: string, standings: GroupStandings
   const winners = label.match(/^Group ([A-L]) winners$/i);
   if (winners) {
     const g = standings.find((s) => s.group.toUpperCase() === winners[1].toUpperCase());
-    const leader = g?.rows.find((r) => r.position === 1);
-    if (g?.isComplete && leader) return leader.name;
+    const leader =
+      g?.rows.find((r) => r.position === 1 && r.qualification === "qualified") ??
+      g?.rows.find((r) => r.position === 1);
+    if (leader && (g?.isComplete || leader.qualification === "qualified")) return leader.name;
     return label;
   }
 
   const runners = label.match(/^Group ([A-L]) runners-up$/i);
   if (runners) {
     const g = standings.find((s) => s.group.toUpperCase() === runners[1].toUpperCase());
-    const second = g?.rows.find((r) => r.position === 2);
-    if (g?.isComplete && second) return second.name;
+    const second =
+      g?.rows.find((r) => r.position === 2 && r.qualification === "qualified") ??
+      g?.rows.find((r) => r.position === 2);
+    if (second && (g?.isComplete || second.qualification === "qualified")) return second.name;
     return label;
   }
 
