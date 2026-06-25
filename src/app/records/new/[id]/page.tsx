@@ -4,7 +4,7 @@ import { createMetadata } from "@/lib/seo";
 import { Badge } from "@/components/ui/Badge";
 import { ShareRecordButton } from "@/components/ui/ShareRecordButton";
 import { getRecordCreated, REVALIDATE_SECONDS } from "@/lib/data";
-import { formatDate } from "@/lib/utils";
+import { formatRecordDate } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -56,7 +56,7 @@ export default async function RecordCreatedDetailPage({ params }: Props) {
         )}
 
         <div className="flex flex-wrap gap-4 text-sm text-white/50">
-          <span>Date: {formatDate(record.event_date)}</span>
+          <span>Date: {formatRecordDate(record.event_date)}</span>
           {record.match && (
             <Link href={`/matches/${record.match.id}`} className="text-accent hover:underline">
               View Match

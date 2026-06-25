@@ -61,6 +61,7 @@ function parseMinute(minute: string): number {
 
 async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
   const eventIds = new Set<string>();
+  const eventDates = new Map<string, string>();
 
   await Promise.all(
     WC_SCOREBOARD_RANGES.map(async (range) => {
@@ -69,9 +70,19 @@ async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
           next: { revalidate: 60 },
         });
         if (!res.ok) return;
-        const json = (await res.json()) as { events?: Array<{ id: string; status?: { type?: { state?: string } } }> };
+        const json = (await res.json()) as {
+          events?: Array<{
+            id: string;
+            date?: string;
+            status?: { type?: { state?: string } };
+            competitions?: Array<{ date?: string }>;
+          }>;
+        };
         for (const event of json.events ?? []) {
-          if (event.status?.type?.state === "post") eventIds.add(event.id);
+          if (event.status?.type?.state !== "post") continue;
+          eventIds.add(event.id);
+          const date = event.competitions?.[0]?.date ?? event.date;
+          if (date) eventDates.set(event.id, date);
         }
       } catch {
         /* skip */
@@ -89,6 +100,7 @@ async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
       const detail = await fetchEspnMatchDetail(eventId);
       if (!detail || detail.status !== "completed") return;
 
+      const matchDate = detail.matchDate || eventDates.get(eventId) || new Date().toISOString();
       const goals = detail.goals.map((g) => ({ ...g, minuteNum: parseMinute(g.minute) }));
       const playerGoals = new Map<string, { player: string; team: string; goals: number; athleteId: string | null }>();
 
@@ -115,7 +127,7 @@ async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
               espnEventId: eventId,
               homeTeam: detail.home.name,
               awayTeam: detail.away.name,
-              matchDate: new Date().toISOString(),
+              matchDate,
             };
           }
         }
@@ -130,7 +142,7 @@ async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
             espnEventId: eventId,
             homeTeam: detail.home.name,
             awayTeam: detail.away.name,
-            matchDate: new Date().toISOString(),
+            matchDate,
           });
         }
         if (!maxPlayerGoalsInMatch || pg.goals > maxPlayerGoalsInMatch.goals) {
@@ -141,7 +153,7 @@ async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
             espnEventId: eventId,
             homeTeam: detail.home.name,
             awayTeam: detail.away.name,
-            matchDate: new Date().toISOString(),
+            matchDate,
           };
         }
       }
@@ -152,7 +164,7 @@ async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
         awayTeam: detail.away.name,
         homeScore: detail.home.score,
         awayScore: detail.away.score,
-        matchDate: new Date().toISOString(),
+        matchDate,
         goals,
         playerGoals,
       });
@@ -164,6 +176,6 @@ async function loadMatchGoalHighlights(): Promise<MatchGoalHighlights> {
 
 export const getCachedMatchGoalHighlights = unstable_cache(
   loadMatchGoalHighlights,
-  ["wc2026-match-goal-highlights-v1"],
+  ["wc2026-match-goal-highlights-v2"],
   { revalidate: 60 }
 );

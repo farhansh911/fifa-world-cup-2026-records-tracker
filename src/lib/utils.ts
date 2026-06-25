@@ -17,6 +17,16 @@ export function formatDate(date: string): string {
   }).format(new Date(date));
 }
 
+/** Match / record milestone dates — use UTC so kickoff day matches the tournament calendar. */
+export function formatRecordDate(date: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(date));
+}
+
 export function formatDateTime(date: string): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",

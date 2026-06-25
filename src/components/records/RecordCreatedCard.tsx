@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatDate } from "@/lib/utils";
+import { formatRecordDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { ShareRecordButton } from "@/components/ui/ShareRecordButton";
 import type { RecordCreated } from "@/types/database";
@@ -31,7 +31,7 @@ export function RecordCreatedCard({ record }: RecordCreatedCardProps) {
       <div className="flex items-center justify-between text-xs text-white/35 border-t border-white/[0.06] pt-3">
         <div>
           {matchLabel && <p>{matchLabel}</p>}
-          <p>{formatDate(record.event_date)}</p>
+          <p>{formatRecordDate(record.event_date)}</p>
         </div>
         <div className="flex items-center gap-2">
           <ShareRecordButton title={record.title} text={`New record: ${record.title}`} />

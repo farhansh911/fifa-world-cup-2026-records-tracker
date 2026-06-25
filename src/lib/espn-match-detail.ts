@@ -22,6 +22,7 @@ export interface GoalEvent {
 
 export interface EspnMatchDetail {
   espnEventId: string;
+  matchDate: string;
   status: "live" | "scheduled" | "completed" | "postponed";
   statusDetail: string;
   minute: number | null;
@@ -103,6 +104,7 @@ export async function fetchEspnMatchDetail(eventId: string): Promise<EspnMatchDe
     const json = (await res.json()) as {
       header?: {
         competitions?: Array<{
+          date?: string;
           status: {
             type: { state: string; description: string; shortDetail?: string };
             displayClock?: string;
@@ -146,6 +148,7 @@ export async function fetchEspnMatchDetail(eventId: string): Promise<EspnMatchDe
 
     return {
       espnEventId: eventId,
+      matchDate: comp.date ?? new Date().toISOString(),
       status,
       statusDetail: comp.status.type.description,
       minute,

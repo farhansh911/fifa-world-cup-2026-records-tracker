@@ -41,6 +41,31 @@ export interface RecordChase {
 
 const NOW = () => new Date().toISOString();
 
+function latestCompletedMatchDate(matches: Match[]): string {
+  const completed = matches
+    .filter((m) => m.status === "completed")
+    .sort((a, b) => b.match_date.localeCompare(a.match_date));
+  return completed[0]?.match_date ?? NOW();
+}
+
+/** Date of the completed match when a running total first reached `threshold`. */
+function thresholdCrossedMatchDate(
+  matches: Match[],
+  threshold: number,
+  valueFromMatch: (m: Match) => number
+): string {
+  const completed = [...matches]
+    .filter((m) => m.status === "completed")
+    .sort((a, b) => a.match_date.localeCompare(b.match_date));
+
+  let running = 0;
+  for (const m of completed) {
+    running += valueFromMatch(m);
+    if (running >= threshold) return m.match_date;
+  }
+  return latestCompletedMatchDate(matches);
+}
+
 function makeId(prefix: string, slug: string): string {
   return `${prefix}-${slug.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
 }
@@ -367,7 +392,7 @@ function buildBrokenRecords(
       match_id: null,
       importance: chase.importance,
       explanation: chase.explanation,
-      event_date: NOW(),
+      event_date: latestGoalMatchDate(chase.player, highlights) ?? latestCompletedMatchDate(matches),
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -384,7 +409,7 @@ function buildBrokenRecords(
       match_id: null,
       importance: "legendary",
       explanation: `${chase.player} reached ${chase.currentValue} career World Cup goals — matching ${chase.recordHolder}. One more goal takes the record outright.`,
-      event_date: NOW(),
+      event_date: latestGoalMatchDate(chase.player, highlights) ?? latestCompletedMatchDate(matches),
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -401,7 +426,7 @@ function buildBrokenRecords(
       match_id: null,
       importance: chase.importance,
       explanation: chase.explanation,
-      event_date: NOW(),
+      event_date: latestGoalMatchDate(chase.player, highlights) ?? latestCompletedMatchDate(matches),
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -554,9 +579,12 @@ function buildCreatedRecords(
 ): RecordCreated[] {
   const created: RecordCreated[] = [];
   const fontaine = ALL_TIME_BENCHMARKS.find((b) => b.id === "single-tournament-goals")!;
+  const completed = matches.filter((m) => m.status === "completed");
+  const latestMatchDate = latestCompletedMatchDate(matches);
 
   if (scorers.length > 0) {
     const leader = scorers[0];
+    const leaderGoalDate = latestGoalMatchDate(leader.name, highlights) ?? latestMatchDate;
     created.push({
       id: makeId("created", "wc2026-golden-boot-leader"),
       title: "World Cup 2026 leading scorer",
@@ -564,7 +592,7 @@ function buildCreatedRecords(
       value: `${leader.goals} goal${leader.goals === 1 ? "" : "s"}`,
       match_id: null,
       description: `${leader.name} (${leader.team}) leads the Golden Boot race at World Cup 2026 with ${leader.goals} goals.`,
-      event_date: NOW(),
+      event_date: leaderGoalDate,
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -577,7 +605,7 @@ function buildCreatedRecords(
         value: `${leader.goals} goals in ${leader.displayValue.match(/Matches: (\d+)/)?.[1] ?? "?"} matches`,
         match_id: null,
         description: `${leader.name} is among the standout scorers of the opening phase.`,
-        event_date: NOW(),
+        event_date: leaderGoalDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -592,7 +620,7 @@ function buildCreatedRecords(
         value: `${player.goals} goals (${fontaine.value - player.goals} behind record)`,
         match_id: null,
         description: `${player.name} is chasing Just Fontaine's single-World-Cup record of ${fontaine.value} goals (1958).`,
-        event_date: NOW(),
+        event_date: latestGoalMatchDate(player.name, highlights) ?? latestMatchDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -606,14 +634,13 @@ function buildCreatedRecords(
         value: `${player.goals} tournament goals`,
         match_id: null,
         description: `${player.name} (${player.team}) reached ${player.goals} goals at this World Cup — a major scoring milestone.`,
-        event_date: NOW(),
+        event_date: latestGoalMatchDate(player.name, highlights) ?? latestMatchDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
     }
   }
 
-  const completed = matches.filter((m) => m.status === "completed");
   const totalGoals = completed.reduce(
     (sum, m) => sum + (m.home_score ?? 0) + (m.away_score ?? 0),
     0
@@ -627,7 +654,7 @@ function buildCreatedRecords(
       value: `${totalGoals} goals`,
       match_id: null,
       description: `${totalGoals} goals across ${completed.length} completed matches at World Cup 2026.`,
-      event_date: NOW(),
+      event_date: latestMatchDate,
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -712,7 +739,7 @@ function buildCreatedRecords(
         value: `${totalGoals} total goals`,
         match_id: null,
         description: `World Cup 2026 has passed ${milestone} total goals across ${completed.length} completed matches.`,
-        event_date: NOW(),
+        event_date: thresholdCrossedMatchDate(matches, milestone, (m) => (m.home_score ?? 0) + (m.away_score ?? 0)),
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -728,7 +755,7 @@ function buildCreatedRecords(
         value: `${completed.length} matches played`,
         match_id: null,
         description: `${completed.length} matches have been completed at World Cup 2026.`,
-        event_date: NOW(),
+        event_date: thresholdCrossedMatchDate(matches, milestone, () => 1),
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -743,7 +770,7 @@ function buildCreatedRecords(
       value: `${chase.currentValue} goals (${chase.goalsAway} to record)`,
       match_id: null,
       description: chase.explanation,
-      event_date: NOW(),
+      event_date: latestGoalMatchDate(chase.player, highlights) ?? latestMatchDate,
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -759,7 +786,7 @@ function buildCreatedRecords(
         value: `${assistLeader.assists} assist${assistLeader.assists === 1 ? "" : "s"}`,
         match_id: null,
         description: `${assistLeader.name} (${assistLeader.team}) leads the assist chart at World Cup 2026.`,
-        event_date: NOW(),
+        event_date: latestMatchDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
@@ -776,7 +803,7 @@ function buildCreatedRecords(
       value: `${avgGoals} goals/match`,
       match_id: null,
       description: `${totalGoals} goals across ${completed.length} matches — averaging ${avgGoals} goals per game.`,
-      event_date: NOW(),
+      event_date: latestMatchDate,
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -793,7 +820,7 @@ function buildCreatedRecords(
       value: `${unbeaten.length} draws`,
       match_id: null,
       description: `${unbeaten.length} matches have ended level so far at World Cup 2026.`,
-      event_date: NOW(),
+      event_date: latestMatchDate,
       created_at: NOW(),
       updated_at: NOW(),
     });
@@ -1020,7 +1047,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v6"],
+  ["wc2026-records-v7"],
   { revalidate: 300 }
 );
 

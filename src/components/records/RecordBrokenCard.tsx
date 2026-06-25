@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cn, getImportanceColor, formatDate } from "@/lib/utils";
+import { cn, getImportanceColor, formatRecordDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { ShareRecordButton } from "@/components/ui/ShareRecordButton";
 import type { RecordBroken } from "@/types/database";
@@ -46,7 +46,7 @@ export function RecordBrokenCard({ record }: RecordBrokenCardProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-white/35 border-t border-white/[0.06] pt-3 min-w-0">
         <div className="min-w-0">
           {matchLabel && <p className="truncate">{matchLabel}</p>}
-          <p>{formatDate(record.event_date)}</p>
+          <p>{formatRecordDate(record.event_date)}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ShareRecordButton title={record.title} text={`${record.new_holder} broke ${record.title}`} />
