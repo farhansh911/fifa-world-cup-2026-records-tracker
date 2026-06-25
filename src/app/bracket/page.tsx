@@ -2,7 +2,7 @@ import { createMetadata } from "@/lib/seo";
 import { PageBanner } from "@/components/layout/PageBanner";
 import { BracketTabs } from "@/components/bracket/BracketTabs";
 import { buildGroupStandings } from "@/lib/group-standings";
-import { buildTournamentBracket, getQualifiedTeams } from "@/lib/bracket";
+import { buildKnockoutBracketView } from "@/lib/bracket";
 import { getWorldCupMatches } from "@/lib/fixtures-api";
 
 export const revalidate = 60;
@@ -21,8 +21,7 @@ export default async function BracketPage({ searchParams }: Props) {
   const params = await searchParams;
   const matches = await getWorldCupMatches();
   const groups = buildGroupStandings(matches);
-  const rounds = buildTournamentBracket(matches);
-  const qualifiedTeams = getQualifiedTeams(groups);
+  const bracketMatches = buildKnockoutBracketView(matches, groups);
 
   const initialTab = params.tab === "bracket" ? "bracket" : "groups";
 
@@ -33,11 +32,10 @@ export default async function BracketPage({ searchParams }: Props) {
         title="Groups & bracket"
         subtitle="Standings, qualification status, and the full knockout path."
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-x-hidden">
         <BracketTabs
           groups={groups}
-          rounds={rounds}
-          qualifiedTeams={qualifiedTeams}
+          bracketMatches={bracketMatches}
           initialTab={initialTab}
           initialGroup={params.group}
         />

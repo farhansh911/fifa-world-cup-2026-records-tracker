@@ -3,29 +3,32 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { GroupStandings } from "@/lib/group-standings";
-import type { BracketRound } from "@/lib/bracket";
+import { bracketMatchesByNumber, type BracketViewMatch } from "@/lib/bracket";
 import { GroupStandingsGrid } from "@/components/groups/GroupStandingsTable";
-import { BracketQualifiersSummary, TournamentBracket } from "@/components/bracket/TournamentBracket";
+import { WorldCupBracket } from "@/components/bracket/WorldCupBracket";
 
 type Tab = "groups" | "bracket";
 
 interface BracketTabsProps {
-  groups: GroupStandings[];
-  rounds: BracketRound[];
-  qualifiedTeams: string[];
+  groups?: GroupStandings[];
+  bracketMatches?: BracketViewMatch[];
   initialTab?: Tab;
   initialGroup?: string;
 }
 
 export function BracketTabs({
-  groups,
-  rounds,
-  qualifiedTeams,
+  groups = [],
+  bracketMatches = [],
   initialTab = "groups",
   initialGroup,
 }: BracketTabsProps) {
   const [active, setActive] = useState<Tab>(initialTab);
   const [groupFilter, setGroupFilter] = useState(initialGroup ?? "all");
+
+  const bracket = useMemo(
+    () => bracketMatchesByNumber(bracketMatches),
+    [bracketMatches]
+  );
 
   const filteredGroups = useMemo(
     () => (groupFilter === "all" ? groups : groups.filter((g) => g.group === groupFilter)),
@@ -101,13 +104,7 @@ export function BracketTabs({
       )}
 
       {active === "bracket" && (
-        <div>
-          <p className="text-sm text-white/40 mb-6">
-            Full knockout path from Round of 32 to the final. Placeholder slots update as groups finish.
-          </p>
-          <BracketQualifiersSummary teams={qualifiedTeams} />
-          <TournamentBracket rounds={rounds} />
-        </div>
+        <WorldCupBracket groups={groups} bracket={bracket} />
       )}
     </div>
   );

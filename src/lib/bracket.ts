@@ -1,5 +1,6 @@
 import type { Match, MatchStatus } from "@/types/database";
-import { buildGroupStandings, resolveKnockoutTeamName, type GroupStandings } from "@/lib/group-standings";
+import { buildGroupStandings, type GroupStandings } from "@/lib/group-standings";
+import { resolveKnockoutSlot, type KnockoutSlotDisplay } from "@/lib/bracket-slots";
 
 export interface BracketMatch {
   id: string;
@@ -63,20 +64,128 @@ function pickWinner(
 }
 
 function isPlaceholderName(name: string): boolean {
-  return /^Group /i.test(name) || /third place/i.test(name) || /winner of/i.test(name);
+  return /^Group /i.test(name) || /third place/i.test(name) || /winner of/i.test(name) || /^W\d+$/i.test(name) || /^[12][A-L]$/i.test(name);
+}
+
+export interface BracketViewMatch {
+  matchNumber: number;
+  id: string;
+  homeRaw: string;
+  awayRaw: string;
+  home: KnockoutSlotDisplay;
+  away: KnockoutSlotDisplay;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: MatchStatus;
+  stageLabel: string;
+}
+
+function knockoutStageLabel(summary: string | null): string {
+  const key = (summary ?? "").toLowerCase().trim();
+  const labels: Record<string, string> = {
+    "round of 32": "Round of 32",
+    "round of 16": "Round of 16",
+    "quarter finals": "Quarter-finals",
+    "semi finals": "Semi-finals",
+    "third place": "Third place",
+    final: "Final",
+  };
+  return labels[key] ?? summary ?? "Knockout";
+}
+
+function buildKnockoutWinners(
+  knockout: Match[],
+  standings: GroupStandings[]
+): Map<number, string> {
+  const winners = new Map<number, string>();
+
+  for (let pass = 0; pass < 3; pass++) {
+    for (const m of knockout) {
+      const num = parseMatchNumber(m.id);
+      if (num == null || m.status !== "completed" || m.home_score == null || m.away_score == null) {
+        continue;
+      }
+
+      const homeRaw = m.home_team?.name ?? "TBD";
+      const awayRaw = m.away_team?.name ?? "TBD";
+      const homeSlot = resolveKnockoutSlot(homeRaw, standings, winners);
+      const awaySlot = resolveKnockoutSlot(awayRaw, standings, winners);
+      const homeName = homeSlot.team ?? homeRaw;
+      const awayName = awaySlot.team ?? awayRaw;
+
+      if (m.home_score > m.away_score) {
+        winners.set(num, homeName);
+        winners.set(-num, awayName);
+      } else if (m.away_score > m.home_score) {
+        winners.set(num, awayName);
+        winners.set(-num, homeName);
+      }
+    }
+  }
+
+  return winners;
+}
+
+export function buildKnockoutBracketView(
+  matches: Match[],
+  standings?: GroupStandings[]
+): BracketViewMatch[] {
+  const groups = standings ?? buildGroupStandings(matches);
+  const knockout = matches
+    .filter(isKnockoutMatch)
+    .sort((a, b) => (parseMatchNumber(a.id) ?? 0) - (parseMatchNumber(b.id) ?? 0));
+
+  const winners = buildKnockoutWinners(knockout, groups);
+  const list: BracketViewMatch[] = [];
+
+  for (const m of knockout) {
+    const num = parseMatchNumber(m.id);
+    if (num == null) continue;
+
+    const homeRaw = m.home_team?.name ?? "TBD";
+    const awayRaw = m.away_team?.name ?? "TBD";
+
+    list.push({
+      matchNumber: num,
+      id: m.id,
+      homeRaw,
+      awayRaw,
+      home: resolveKnockoutSlot(homeRaw, groups, winners),
+      away: resolveKnockoutSlot(awayRaw, groups, winners),
+      homeScore: m.home_score,
+      awayScore: m.away_score,
+      status: m.status,
+      stageLabel: knockoutStageLabel(m.summary),
+    });
+  }
+
+  return list;
+}
+
+export function bracketMatchesByNumber(
+  matches: BracketViewMatch[] | undefined | null
+): Map<number, BracketViewMatch> {
+  const map = new Map<number, BracketViewMatch>();
+  for (const m of matches ?? []) {
+    map.set(m.matchNumber, m);
+  }
+  return map;
 }
 
 export function buildTournamentBracket(matches: Match[]): BracketRound[] {
   const standings = buildGroupStandings(matches);
   const knockout = matches.filter(isKnockoutMatch).sort((a, b) => a.match_date.localeCompare(b.match_date));
+  const winners = buildKnockoutWinners(knockout, standings);
 
   const bracketMatches: BracketMatch[] = knockout.map((m) => {
     const key = stageKey(m.summary);
     const meta = STAGE_ORDER[key] ?? { order: 99, label: m.summary ?? "Knockout" };
     const homeRaw = m.home_team?.name ?? "TBD";
     const awayRaw = m.away_team?.name ?? "TBD";
-    const homeTeam = resolveKnockoutTeamName(homeRaw, standings);
-    const awayTeam = resolveKnockoutTeamName(awayRaw, standings);
+    const homeSlot = resolveKnockoutSlot(homeRaw, standings, winners);
+    const awaySlot = resolveKnockoutSlot(awayRaw, standings, winners);
+    const homeTeam = homeSlot.team ?? homeSlot.code;
+    const awayTeam = awaySlot.team ?? awaySlot.code;
 
     return {
       id: m.id,
@@ -92,7 +201,7 @@ export function buildTournamentBracket(matches: Match[]): BracketRound[] {
       matchDate: m.match_date,
       stadium: m.stadium,
       winner: pickWinner(homeTeam, awayTeam, m.home_score, m.away_score, m.status),
-      isPlaceholder: isPlaceholderName(homeRaw) || isPlaceholderName(awayRaw),
+      isPlaceholder: !homeSlot.resolved || !awaySlot.resolved,
     };
   });
 
@@ -114,11 +223,67 @@ export function buildTournamentBracket(matches: Match[]): BracketRound[] {
 }
 
 export function getQualifiedTeams(standings: GroupStandings[]): string[] {
-  const names: string[] = [];
+  return getQualifiedTeamDetails(standings).map((t) => t.name);
+}
+
+export interface QualifiedTeam {
+  name: string;
+  code: string;
+  flag_url: string | null;
+  group: string;
+  position: number;
+  qualificationLabel: string;
+}
+
+export function getQualifiedTeamDetails(standings: GroupStandings[]): QualifiedTeam[] {
+  const teams: QualifiedTeam[] = [];
+
   for (const g of standings) {
+    if (!g.isComplete) continue;
     for (const row of g.rows) {
-      if (row.qualification === "qualified") names.push(row.name);
+      if (row.qualification !== "qualified") continue;
+      teams.push({
+        name: row.name,
+        code: row.code,
+        flag_url: row.flag_url,
+        group: g.group,
+        position: row.position,
+        qualificationLabel: row.qualificationLabel,
+      });
     }
   }
-  return names;
+
+  return teams.sort(
+    (a, b) => a.group.localeCompare(b.group) || a.position - b.position
+  );
+}
+
+/** Groups A–F on the left path; G–L on the right — mirrors the 2026 bracket split. */
+export function splitQualifierSides(teams: QualifiedTeam[] | undefined | null): {
+  left: QualifiedTeam[];
+  right: QualifiedTeam[];
+} {
+  const safe = teams ?? [];
+  return {
+    left: safe.filter((t) => t.group <= "F"),
+    right: safe.filter((t) => t.group > "F"),
+  };
+}
+
+export function teamLastGroupMatchDate(
+  teamName: string,
+  group: string,
+  matches: Match[]
+): string | null {
+  const groupMatches = matches
+    .filter(
+      (m) =>
+        m.group_name === group &&
+        m.summary?.toLowerCase() === "group stage" &&
+        m.status === "completed" &&
+        (m.home_team?.name === teamName || m.away_team?.name === teamName)
+    )
+    .sort((a, b) => b.match_date.localeCompare(a.match_date));
+
+  return groupMatches[0]?.match_date ?? null;
 }

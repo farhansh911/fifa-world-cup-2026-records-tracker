@@ -2,6 +2,9 @@ import { unstable_cache } from "next/cache";
 import { fetchTournamentLeaders, type TournamentPlayerStat } from "@/lib/espn-stats";
 import { getCachedFifaPlayerPhotos, fifaPhotoFor, type FifaPhotoCatalog } from "@/lib/fifa-player-photos";
 import { getWorldCupMatches } from "@/lib/fixtures-api";
+import { buildGroupStandings, type GroupStandings } from "@/lib/group-standings";
+import { teamLastGroupMatchDate } from "@/lib/bracket";
+import { isFirstKnockoutQualification } from "@/lib/wc-knockout-history";
 import { getCachedMatchGoalHighlights, type MatchGoalHighlights } from "@/lib/match-goal-events";
 import {
   ALL_TIME_BENCHMARKS,
@@ -79,7 +82,7 @@ const IMPORTANCE_RANK: Record<ImportanceLevel, number> = {
 
 /** Higher = more likely to appear first when dates tie. Player milestones beat generic tallies. */
 function recordHighlightScore(id: string): number {
-  if (/six-wc-goals|tied-wc-tournaments|hattrick|fastest-goal|most-goals-one|broken-chase-tournaments/.test(id)) {
+  if (/six-wc-goals|tied-wc-tournaments|hattrick|fastest-goal|most-goals-one|broken-chase-tournaments|first-knockout/.test(id)) {
     return 100;
   }
   if (/broken-chase|broken-tied|four-goal|hattrick-broken/.test(id)) {
@@ -829,6 +832,41 @@ function buildCreatedRecords(
   return created;
 }
 
+function buildFirstKnockoutQualificationRecords(
+  groups: GroupStandings[],
+  matches: Match[]
+): RecordCreated[] {
+  const created: RecordCreated[] = [];
+
+  for (const g of groups) {
+    if (!g.isComplete) continue;
+    for (const row of g.rows) {
+      if (row.qualification !== "qualified") continue;
+      if (!isFirstKnockoutQualification(row.name)) continue;
+
+      const clinchDate =
+        teamLastGroupMatchDate(row.name, g.group, matches) ?? latestCompletedMatchDate(matches);
+
+      const viaThird = row.qualificationLabel.toLowerCase().includes("3rd");
+      const pathLabel = viaThird ? "as one of the best third-placed teams" : `as Group ${g.group} ${row.position === 1 ? "winners" : "runners-up"}`;
+
+      created.push({
+        id: makeId("created", `first-knockout-${row.code}-${g.group}`),
+        title: "First World Cup knockout appearance",
+        holder: row.name,
+        value: "Round of 32",
+        match_id: null,
+        description: `${row.name} qualified for the Round of 32 at World Cup 2026 ${pathLabel} — the nation's first ever appearance in the World Cup knockout stage.`,
+        event_date: clinchDate,
+        created_at: NOW(),
+        updated_at: NOW(),
+      });
+    }
+  }
+
+  return created;
+}
+
 function buildTimeline(
   broken: RecordBroken[],
   created: RecordCreated[],
@@ -1019,6 +1057,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
   const tournamentChases = buildSingleTournamentChases(scorers);
   const assistChases = buildAssistChases(assisters);
   const multiTournament = buildMultiTournamentScoringRecords(scorers, highlights);
+  const groups = buildGroupStandings(matches);
   const allChases = [...chases, ...tournamentChases, ...assistChases, ...multiTournament.chases];
   const broken = sortBrokenRecords([
     ...buildBrokenRecords(chases, tournamentChases, assistChases, matches, highlights),
@@ -1027,6 +1066,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
   const created = sortCreatedRecords([
     ...buildCreatedRecords(scorers, matches, assisters, highlights, tournamentChases),
     ...multiTournament.created,
+    ...buildFirstKnockoutQualificationRecords(groups, matches),
   ]);
   const timeline = buildTimeline(broken, created, [...chases, ...multiTournament.chases], tournamentChases, assistChases, scorers);
   const players = scorersToPlayers(scorers, assisters, fifaPhotos);
@@ -1047,7 +1087,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v7"],
+  ["wc2026-records-v8"],
   { revalidate: 300 }
 );
 

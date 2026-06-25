@@ -479,25 +479,21 @@ export function getGroupStandingsForGroup(matches: Match[], group: string): Grou
   return buildGroupStandings(matches).find((g) => g.group === group) ?? null;
 }
 
-/** Resolve placeholder knockout names like "Group A winners". */
+/** Resolve placeholder knockout names — only when the group stage is finished. */
 export function resolveKnockoutTeamName(label: string, standings: GroupStandings[]): string {
   const winners = label.match(/^Group ([A-L]) winners$/i);
   if (winners) {
     const g = standings.find((s) => s.group.toUpperCase() === winners[1].toUpperCase());
-    const leader =
-      g?.rows.find((r) => r.position === 1 && r.qualification === "qualified") ??
-      g?.rows.find((r) => r.position === 1);
-    if (leader && (g?.isComplete || leader.qualification === "qualified")) return leader.name;
+    const leader = g?.rows.find((r) => r.position === 1);
+    if (leader && g?.isComplete) return leader.name;
     return label;
   }
 
   const runners = label.match(/^Group ([A-L]) runners-up$/i);
   if (runners) {
     const g = standings.find((s) => s.group.toUpperCase() === runners[1].toUpperCase());
-    const second =
-      g?.rows.find((r) => r.position === 2 && r.qualification === "qualified") ??
-      g?.rows.find((r) => r.position === 2);
-    if (second && (g?.isComplete || second.qualification === "qualified")) return second.name;
+    const second = g?.rows.find((r) => r.position === 2);
+    if (second && g?.isComplete) return second.name;
     return label;
   }
 
