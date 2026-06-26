@@ -33,9 +33,11 @@ interface WorldCupBracketProps {
 function SlotLine({
   slot,
   score,
+  mobile,
 }: {
   slot: KnockoutSlotDisplay;
   score?: number | null;
+  mobile?: boolean;
 }) {
   const label = slot.team ?? slot.code;
   const isCode = !slot.team;
@@ -43,7 +45,10 @@ function SlotLine({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-1 px-2 py-1 min-h-[24px] text-[10px] border-b border-white/[0.08] last:border-b-0",
+        "flex items-center justify-between gap-2 border-b border-white/[0.08] last:border-b-0",
+        mobile
+          ? "px-3 py-2.5 min-h-[44px] text-sm"
+          : "px-2 py-1 min-h-[24px] text-[10px]",
         slot.resolved && "bg-emerald-500/[0.08]"
       )}
     >
@@ -56,7 +61,12 @@ function SlotLine({
         {label}
       </span>
       {score != null && (
-        <span className="font-display font-bold tabular-nums text-white/90 shrink-0 text-[10px]">
+        <span
+          className={cn(
+            "font-display font-bold tabular-nums text-white/90 shrink-0",
+            mobile ? "text-base" : "text-[10px]"
+          )}
+        >
           {score}
         </span>
       )}
@@ -64,20 +74,41 @@ function SlotLine({
   );
 }
 
-function MatchBox({ match }: { match?: BracketViewMatch }) {
+function MatchBox({ match, mobile }: { match?: BracketViewMatch; mobile?: boolean }) {
   if (!match) {
     return (
-      <div className="rounded-md border border-white/10 bg-white/[0.04] h-[50px]" />
+      <div
+        className={cn(
+          "rounded-md border border-white/10 bg-white/[0.04]",
+          mobile ? "h-[92px]" : "h-[50px]"
+        )}
+      />
     );
   }
 
   return (
     <Link
       href={`/matches/${match.id}`}
-      className="block rounded-md border border-white/20 bg-[#3a3a3e]/90 hover:border-white/35 transition-colors overflow-hidden"
+      className={cn(
+        "block rounded-md border border-white/20 bg-[#3a3a3e]/90 hover:border-white/35 active:border-accent/40 transition-colors overflow-hidden",
+        mobile && "shadow-sm"
+      )}
     >
-      <SlotLine slot={match.home} score={match.status === "completed" ? match.homeScore : null} />
-      <SlotLine slot={match.away} score={match.status === "completed" ? match.awayScore : null} />
+      {mobile && (
+        <div className="px-3 py-1.5 bg-white/[0.05] border-b border-white/[0.08] flex items-center justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-white/45">
+            Match {match.matchNumber}
+          </span>
+          {match.status === "live" && (
+            <span className="text-[10px] font-bold text-red-400 uppercase">Live</span>
+          )}
+          {match.status === "completed" && (
+            <span className="text-[10px] font-bold text-white/40 uppercase">FT</span>
+          )}
+        </div>
+      )}
+      <SlotLine slot={match.home} score={match.status === "completed" ? match.homeScore : null} mobile={mobile} />
+      <SlotLine slot={match.away} score={match.status === "completed" ? match.awayScore : null} mobile={mobile} />
     </Link>
   );
 }
@@ -161,11 +192,13 @@ function PodiumSideSlot({
   score,
   matchId,
   side,
+  mobile,
 }: {
   slot?: KnockoutSlotDisplay;
   score?: number | null;
   matchId?: string;
   side: "left" | "right";
+  mobile?: boolean;
 }) {
   const label = slot?.team ?? slot?.code ?? "";
   const isCode = !slot?.team;
@@ -174,9 +207,10 @@ function PodiumSideSlot({
   const box = (
     <div
       className={cn(
-        "flex flex-col justify-center rounded-md border border-white/20 bg-[#3a3a3e]/90 w-[72px] min-h-[56px] px-2 py-2 transition-colors",
+        "flex flex-col justify-center rounded-md border border-white/20 bg-[#3a3a3e]/90 px-2 py-2 transition-colors",
+        mobile ? "flex-1 min-w-0 min-h-[64px]" : "w-[72px] min-h-[56px]",
         slot?.resolved && "bg-emerald-500/[0.1] border-emerald-500/25",
-        matchId && "hover:border-white/40",
+        matchId && "hover:border-white/40 active:border-accent/40",
         side === "right" && "items-end text-right"
       )}
     >
@@ -186,14 +220,20 @@ function PodiumSideSlot({
         <>
           <span
             className={cn(
-              "text-[11px] font-semibold leading-tight truncate w-full",
+              mobile ? "text-sm" : "text-[11px]",
+              "font-semibold leading-tight truncate w-full",
               isCode ? "text-white/45 italic" : "text-white"
             )}
           >
             {label}
           </span>
           {score != null && (
-            <span className="text-[12px] font-display font-bold tabular-nums text-white mt-0.5">
+            <span
+              className={cn(
+                "font-display font-bold tabular-nums text-white mt-0.5",
+                mobile ? "text-lg" : "text-[12px]"
+              )}
+            >
               {score}
             </span>
           )}
@@ -204,68 +244,124 @@ function PodiumSideSlot({
 
   if (!matchId) {
     return (
-      <div className="w-[72px] min-h-[56px] rounded-md border border-white/10 bg-white/[0.04]" />
+      <div
+        className={cn(
+          "rounded-md border border-white/10 bg-white/[0.04]",
+          mobile ? "flex-1 min-h-[64px]" : "w-[72px] min-h-[56px]"
+        )}
+      />
     );
   }
 
   return (
-    <Link href={`/matches/${matchId}`} className="block shrink-0">
+    <Link href={`/matches/${matchId}`} className={cn("block shrink-0", mobile && "flex-1 min-w-0")}>
       {box}
     </Link>
   );
 }
 
 /** FIFA poster centre: World Champions → trophy flanked by finalists → Bronze Winner. */
-function CenterPodium({ bracket }: { bracket: Map<number, BracketViewMatch> }) {
+function CenterPodium({
+  bracket,
+  mobile,
+}: {
+  bracket: Map<number, BracketViewMatch>;
+  mobile?: boolean;
+}) {
   const finalMatch = bracket.get(BRACKET_FINAL);
   const thirdMatch = bracket.get(BRACKET_THIRD);
 
+  const trophySize = mobile ? 72 : 96;
+
   return (
-    <div className="flex flex-col items-center justify-center shrink-0 min-w-[260px] h-full self-stretch px-2">
-      <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.18em] text-white text-center leading-snug mb-3">
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center shrink-0 px-2",
+        mobile ? "w-full py-2" : "min-w-[260px] h-full self-stretch"
+      )}
+    >
+      <p
+        className={cn(
+          "font-black uppercase tracking-[0.18em] text-white text-center leading-snug mb-3",
+          mobile ? "text-sm" : "text-[11px] sm:text-xs"
+        )}
+      >
         World
         <br />
         Champions
       </p>
 
-      <div className="flex items-center justify-center">
+      <div className={cn("flex items-center justify-center w-full", mobile && "gap-2 px-1")}>
         <PodiumSideSlot
           side="left"
+          mobile={mobile}
           slot={finalMatch?.home}
           score={finalMatch?.status === "completed" ? finalMatch.homeScore : null}
           matchId={finalMatch?.id}
         />
-        <div className="relative shrink-0 mx-2 sm:mx-3">
+        <div className={cn("relative shrink-0", mobile ? "mx-1" : "mx-2 sm:mx-3")}>
           <div className="absolute inset-0 bg-highlight/15 blur-2xl rounded-full scale-110" />
-          <WorldCupTrophy size={96} className="relative drop-shadow-[0_0_24px_rgba(245,197,66,0.45)]" />
+          <WorldCupTrophy
+            size={trophySize}
+            className="relative drop-shadow-[0_0_24px_rgba(245,197,66,0.45)]"
+          />
         </div>
         <PodiumSideSlot
           side="right"
+          mobile={mobile}
           slot={finalMatch?.away}
           score={finalMatch?.status === "completed" ? finalMatch.awayScore : null}
           matchId={finalMatch?.id}
         />
       </div>
 
-      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 mt-5 mb-2">
+      {mobile && finalMatch && (
+        <Link
+          href={`/matches/${finalMatch.id}`}
+          className="text-[11px] text-white/35 mt-2 hover:text-accent transition-colors"
+        >
+          Match {finalMatch.matchNumber} · Final
+        </Link>
+      )}
+
+      <p
+        className={cn(
+          "font-bold uppercase tracking-[0.22em] text-white/75 mb-2",
+          mobile ? "text-xs mt-6" : "text-[10px] mt-5"
+        )}
+      >
         Bronze Winner
       </p>
 
-      <div className="flex items-center justify-center">
+      <div className={cn("flex items-center justify-center w-full", mobile && "gap-2 px-1")}>
         <PodiumSideSlot
           side="left"
+          mobile={mobile}
           slot={thirdMatch?.home}
           score={thirdMatch?.status === "completed" ? thirdMatch.homeScore : null}
           matchId={thirdMatch?.id}
         />
-        <div className="w-[96px] mx-2 sm:mx-3 shrink-0" aria-hidden />
+        <div
+          className={cn("shrink-0", mobile ? "w-[72px] mx-1" : "w-[96px] mx-2 sm:mx-3")}
+          aria-hidden
+        />
         <PodiumSideSlot
           side="right"
+          mobile={mobile}
           slot={thirdMatch?.away}
           score={thirdMatch?.status === "completed" ? thirdMatch.awayScore : null}
           matchId={thirdMatch?.id}
         />
       </div>
+
+      {mobile && thirdMatch && (
+        <Link
+          href={`/matches/${thirdMatch.id}`}
+          className="text-[11px] text-white/35 mt-2 hover:text-accent transition-colors"
+        >
+          Match {thirdMatch.matchNumber} · 3rd place
+        </Link>
+      )}
 
       <div className="mt-5 text-center select-none">
         <p className="font-display text-xl font-black text-highlight leading-none">26</p>
@@ -273,6 +369,111 @@ function CenterPodium({ bracket }: { bracket: Map<number, BracketViewMatch> }) {
           FIFA World Cup 2026
         </p>
       </div>
+    </div>
+  );
+}
+
+function MobileRoundSection({
+  title,
+  numbers,
+  bracket,
+}: {
+  title: string;
+  numbers: number[];
+  bracket: Map<number, BracketViewMatch>;
+}) {
+  return (
+    <section>
+      <h3 className="text-xs font-bold uppercase tracking-wider text-white/45 mb-2.5 px-0.5">
+        {title}
+      </h3>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {numbers.map((n) => (
+          <MatchBox key={n} match={bracket.get(n)} mobile />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MobileGroupsStrip({ groups }: { groups: GroupStandings[] }) {
+  const letters = [...LEFT_GROUPS, ...RIGHT_GROUPS];
+
+  return (
+    <section>
+      <h3 className="text-xs font-bold uppercase tracking-wider text-white/45 mb-2.5 px-0.5">
+        Groups
+      </h3>
+      <div className="overflow-x-auto pb-1 -mx-1">
+        <div className="flex gap-2 px-1 min-w-max">
+          {letters.map((letter) => (
+            <GroupPanel
+              key={letter}
+              group={letter}
+              standings={groups.find((g) => g.group.toUpperCase() === letter)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MobileKnockoutBracket({
+  groups,
+  bracket,
+}: {
+  groups: GroupStandings[];
+  bracket: Map<number, BracketViewMatch>;
+}) {
+  const r32 = [...BRACKET_LEFT_R32, ...BRACKET_RIGHT_R32];
+  const r16 = [...BRACKET_LEFT_R16, ...BRACKET_RIGHT_R16];
+  const qf = [...BRACKET_LEFT_QF, ...BRACKET_RIGHT_QF];
+
+  return (
+    <div className="lg:hidden p-3 sm:p-4 space-y-6">
+      <CenterPodium bracket={bracket} mobile />
+      <MobileRoundSection title="Semi-finals" numbers={[BRACKET_SF1, BRACKET_SF2]} bracket={bracket} />
+      <MobileRoundSection title="Quarter-finals" numbers={qf} bracket={bracket} />
+      <MobileRoundSection title="Round of 16" numbers={r16} bracket={bracket} />
+      <MobileRoundSection title="Round of 32" numbers={r32} bracket={bracket} />
+      <MobileGroupsStrip groups={groups} />
+    </div>
+  );
+}
+
+function DesktopKnockoutBracket({
+  groups,
+  bracket,
+}: {
+  groups: GroupStandings[];
+  bracket: Map<number, BracketViewMatch>;
+}) {
+  return (
+    <div className="hidden lg:block">
+      <BracketFit>
+        <div className="flex items-stretch gap-1.5 px-3 py-3 h-[660px]">
+          <GroupsColumn letters={LEFT_GROUPS} groups={groups} />
+
+          <div className="flex items-stretch gap-1.5 justify-end h-full">
+            <MatchColumn label="Round of 32" numbers={BRACKET_LEFT_R32} bracket={bracket} width="w-[92px]" />
+            <MatchColumn label="Round of 16" numbers={BRACKET_LEFT_R16} bracket={bracket} width="w-[86px]" />
+            <MatchColumn label="Quarter-finals" numbers={BRACKET_LEFT_QF} bracket={bracket} width="w-[80px]" />
+            <MatchColumn label="Semi-final" numbers={[BRACKET_SF1]} bracket={bracket} width="w-[80px]" />
+          </div>
+
+          <CenterPodium bracket={bracket} />
+
+          <div className="flex items-stretch gap-1.5 justify-start h-full">
+            <MatchColumn label="Semi-final" numbers={[BRACKET_SF2]} bracket={bracket} width="w-[80px]" />
+            <MatchColumn label="Quarter-finals" numbers={BRACKET_RIGHT_QF} bracket={bracket} width="w-[80px]" />
+            <MatchColumn label="Round of 16" numbers={BRACKET_RIGHT_R16} bracket={bracket} width="w-[86px]" />
+            <MatchColumn label="Round of 32" numbers={BRACKET_RIGHT_R32} bracket={bracket} width="w-[92px]" />
+          </div>
+
+          <GroupsColumn letters={RIGHT_GROUPS} groups={groups} />
+        </div>
+      </BracketFit>
     </div>
   );
 }
@@ -353,37 +554,19 @@ export function WorldCupBracket({ groups = [], bracket = new Map() }: WorldCupBr
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="font-display text-lg font-black text-white">Knockout bracket</h2>
-          <p className="text-xs text-white/40 mt-0.5">
+          <p className="text-xs text-white/40 mt-0.5 hidden sm:block">
             Codes like <span className="font-mono text-white/55">1A</span> until groups finish
+          </p>
+          <p className="text-[11px] text-white/35 mt-0.5 sm:hidden">
+            Tap a match for details · scroll for all rounds
           </p>
         </div>
         <p className="text-xs text-white/35 tabular-nums">{qualifiedCount}/32 through or on course</p>
       </div>
 
       <div className="relative rounded-xl border border-white/10 bg-black overflow-hidden">
-        <BracketFit>
-          <div className="flex items-stretch gap-1.5 px-3 py-3 h-[660px]">
-            <GroupsColumn letters={LEFT_GROUPS} groups={groups} />
-
-            <div className="flex items-stretch gap-1.5 justify-end h-full">
-              <MatchColumn label="Round of 32" numbers={BRACKET_LEFT_R32} bracket={bracket} width="w-[92px]" />
-              <MatchColumn label="Round of 16" numbers={BRACKET_LEFT_R16} bracket={bracket} width="w-[86px]" />
-              <MatchColumn label="Quarter-finals" numbers={BRACKET_LEFT_QF} bracket={bracket} width="w-[80px]" />
-              <MatchColumn label="Semi-final" numbers={[BRACKET_SF1]} bracket={bracket} width="w-[80px]" />
-            </div>
-
-            <CenterPodium bracket={bracket} />
-
-            <div className="flex items-stretch gap-1.5 justify-start h-full">
-              <MatchColumn label="Semi-final" numbers={[BRACKET_SF2]} bracket={bracket} width="w-[80px]" />
-              <MatchColumn label="Quarter-finals" numbers={BRACKET_RIGHT_QF} bracket={bracket} width="w-[80px]" />
-              <MatchColumn label="Round of 16" numbers={BRACKET_RIGHT_R16} bracket={bracket} width="w-[86px]" />
-              <MatchColumn label="Round of 32" numbers={BRACKET_RIGHT_R32} bracket={bracket} width="w-[92px]" />
-            </div>
-
-            <GroupsColumn letters={RIGHT_GROUPS} groups={groups} />
-          </div>
-        </BracketFit>
+        <MobileKnockoutBracket groups={groups} bracket={bracket} />
+        <DesktopKnockoutBracket groups={groups} bracket={bracket} />
       </div>
     </section>
   );
