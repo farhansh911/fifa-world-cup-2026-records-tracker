@@ -110,11 +110,19 @@ export function resolveKnockoutSlot(
   return { code: label, team: label, resolved: true };
 }
 
-/** Bracket halves — matches 73–80 feed the left side; 81–88 the right. */
-export const BRACKET_LEFT_R32 = [73, 74, 75, 76, 77, 78, 79, 80];
-export const BRACKET_RIGHT_R32 = [81, 82, 83, 84, 85, 86, 87, 88];
-export const BRACKET_LEFT_R16 = [89, 90, 91, 92];
-export const BRACKET_RIGHT_R16 = [93, 94, 95, 96];
+/**
+ * Visual bracket halves — which side of the poster each match sits on.
+ *
+ * NOT by match number (73–80 vs 81–88). FIFA splits the draw by semi-final path:
+ * - Left  → SF101 (QF97 vs QF98) — top half of the knockout tree
+ * - Right → SF102 (QF99 vs QF100) — bottom half (includes Brazil vs Japan, M76)
+ *
+ * @see https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/knockout-stage-match-schedule-bracket
+ */
+export const BRACKET_LEFT_R32 = [73, 75, 74, 77, 81, 82, 83, 84];
+export const BRACKET_RIGHT_R32 = [76, 78, 79, 80, 85, 87, 86, 88];
+export const BRACKET_LEFT_R16 = [90, 89, 94, 93];
+export const BRACKET_RIGHT_R16 = [91, 92, 96, 95];
 export const BRACKET_LEFT_QF = [97, 98];
 export const BRACKET_RIGHT_QF = [99, 100];
 export const BRACKET_SF1 = 101;
