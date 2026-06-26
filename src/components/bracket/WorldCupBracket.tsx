@@ -271,7 +271,7 @@ function CenterPodium({
   const finalMatch = bracket.get(BRACKET_FINAL);
   const thirdMatch = bracket.get(BRACKET_THIRD);
 
-  const trophySize = mobile ? 72 : 96;
+  const trophySize = mobile ? 88 : 112;
 
   return (
     <div
@@ -299,11 +299,12 @@ function CenterPodium({
           score={finalMatch?.status === "completed" ? finalMatch.homeScore : null}
           matchId={finalMatch?.id}
         />
-        <div className={cn("relative shrink-0", mobile ? "mx-1" : "mx-2 sm:mx-3")}>
+        <div className={cn("relative shrink-0 flex items-end justify-center", mobile ? "mx-1" : "mx-2 sm:mx-3")}>
           <div className="absolute inset-0 bg-highlight/15 blur-2xl rounded-full scale-110" />
           <WorldCupTrophy
+            photo
             size={trophySize}
-            className="relative drop-shadow-[0_0_24px_rgba(245,197,66,0.45)]"
+            className="relative"
           />
         </div>
         <PodiumSideSlot
@@ -342,7 +343,7 @@ function CenterPodium({
           matchId={thirdMatch?.id}
         />
         <div
-          className={cn("shrink-0", mobile ? "w-[72px] mx-1" : "w-[96px] mx-2 sm:mx-3")}
+          className={cn("shrink-0", mobile ? "w-[88px] mx-1" : "w-[112px] mx-2 sm:mx-3")}
           aria-hidden
         />
         <PodiumSideSlot
