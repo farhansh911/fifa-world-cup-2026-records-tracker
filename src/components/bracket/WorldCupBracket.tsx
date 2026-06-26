@@ -271,7 +271,7 @@ function CenterPodium({
   const finalMatch = bracket.get(BRACKET_FINAL);
   const thirdMatch = bracket.get(BRACKET_THIRD);
 
-  const trophySize = mobile ? 88 : 112;
+  const trophySize = mobile ? 96 : 120;
 
   return (
     <div
