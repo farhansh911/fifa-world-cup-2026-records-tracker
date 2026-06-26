@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 360" fill="none" role="img" aria-label="FIFA World Cup Trophy">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF4B8"/>
+      <stop offset="35%" stop-color="#F5C542"/>
+      <stop offset="70%" stop-color="#D4A017"/>
+      <stop offset="100%" stop-color="#9A7209"/>
+    </linearGradient>
+    <linearGradient id="goldDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+    <linearGradient id="globe" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8DC"/>
+      <stop offset="50%" stop-color="#F5C542"/>
+      <stop offset="100%" stop-color="#C9A020"/>
+    </linearGradient>
+    <linearGradient id="malachite" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B5E20"/>
+      <stop offset="30%" stop-color="#2E7D32"/>
+      <stop offset="60%" stop-color="#1B4332"/>
+      <stop offset="100%" stop-color="#0D3320"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="rgba(245,197,66,0.35)"/>
+      <stop offset="100%" stop-color="rgba(245,197,66,0)"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-10%" width="140%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="100" cy="340" rx="72" ry="14" fill="rgba(0,0,0,0.35)"/>
+  <circle cx="100" cy="120" r="95" fill="url(#glow)"/>
+
+  <!-- Malachite base -->
+  <path d="M58 292 C58 272 72 258 100 258 C128 258 142 272 142 292 L142 318 C142 332 124 342 100 342 C76 342 58 332 58 318 Z" fill="url(#malachite)" filter="url(#softShadow)"/>
+  <path d="M62 296 C62 278 76 266 100 266 C124 266 138 278 138 296" stroke="rgba(255,255,255,0.12)" stroke-width="2" fill="none"/>
+  <path d="M68 304 C68 290 82 280 100 280 C118 280 132 290 132 304" stroke="rgba(0,0,0,0.25)" stroke-width="2" fill="none"/>
+  <rect x="72" y="318" width="56" height="10" rx="2" fill="url(#goldDark)"/>
+  <rect x="78" y="328" width="44" height="8" rx="2" fill="url(#gold)"/>
+
+  <!-- Left figure -->
+  <path d="M72 258 C62 230 58 200 66 168 C72 144 82 128 92 118 C96 114 100 112 100 112 C100 112 88 124 84 146 C80 168 82 196 92 222 C96 234 98 248 96 258 Z" fill="url(#gold)"/>
+  <path d="M66 168 C58 182 54 200 58 218 C62 236 70 248 78 252" stroke="url(#goldDark)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M92 118 C88 108 86 96 90 84 C94 72 100 64 100 64" stroke="url(#gold)" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- Right figure -->
+  <path d="M128 258 C138 230 142 200 134 168 C128 144 118 128 108 118 C104 114 100 112 100 112 C100 112 112 124 116 146 C120 168 118 196 108 222 C104 234 102 248 104 258 Z" fill="url(#gold)"/>
+  <path d="M134 168 C142 182 146 200 142 218 C138 236 130 248 122 252" stroke="url(#goldDark)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M108 118 C112 108 114 96 110 84 C106 72 100 64 100 64" stroke="url(#gold)" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- Globe -->
+  <circle cx="100" cy="52" r="34" fill="url(#globe)" filter="url(#softShadow)"/>
+  <ellipse cx="100" cy="52" rx="34" ry="10" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" fill="none"/>
+  <ellipse cx="100" cy="52" rx="10" ry="34" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" fill="none"/>
+  <path d="M68 52 C78 42 88 38 100 38 C112 38 122 42 132 52" stroke="rgba(180,130,20,0.5)" stroke-width="1.5" fill="none"/>
+  <path d="M68 52 C78 62 88 66 100 66 C112 66 122 62 132 52" stroke="rgba(180,130,20,0.5)" stroke-width="1.5" fill="none"/>
+  <path d="M78 28 C86 36 92 44 96 52" stroke="rgba(255,255,255,0.35)" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Highlight -->
+  <path d="M88 18 C94 24 98 32 100 40" stroke="rgba(255,255,255,0.55)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>
