@@ -357,7 +357,7 @@ export function WorldCupBracket({ groups = [], bracket = new Map() }: WorldCupBr
             Codes like <span className="font-mono text-white/55">1A</span> until groups finish
           </p>
         </div>
-        <p className="text-xs text-white/35 tabular-nums">{qualifiedCount}/32 qualified</p>
+        <p className="text-xs text-white/35 tabular-nums">{qualifiedCount}/32 through or on course</p>
       </div>
 
       <div className="relative rounded-xl border border-white/10 bg-black overflow-hidden">

@@ -330,6 +330,40 @@ function assignQualification(
   });
 }
 
+export type BestThirdStatus = "on-course" | "can-qualify" | "qualified" | "eliminated";
+
+function thirdPlaceSlotStatus(
+  inTopEight: boolean,
+  groupComplete: boolean
+): { status: BestThirdStatus; qualification: QualificationStatus; label: string } {
+  if (inTopEight) {
+    if (groupComplete) {
+      return {
+        status: "qualified",
+        qualification: "qualified",
+        label: "Round of 32 (3rd)",
+      };
+    }
+    return {
+      status: "on-course",
+      qualification: "best-third",
+      label: "3rd+ (on course)",
+    };
+  }
+  if (groupComplete) {
+    return {
+      status: "eliminated",
+      qualification: "eliminated",
+      label: "Eliminated",
+    };
+  }
+  return {
+    status: "can-qualify",
+    qualification: "possible",
+    label: "Can still qualify",
+  };
+}
+
 function getThirdPlaceCandidate(g: GroupStandings): GroupStandingRow | null {
   const sorted = sortRows(g.rows);
   const third = sorted[2];
@@ -365,33 +399,11 @@ function applyCrossGroupThirdRanking(groups: GroupStandings[]): GroupStandings[]
       rows: g.rows.map((row) => {
         if (row.teamId !== third.teamId) return row;
 
-        if (topEightIds.has(row.teamId)) {
-          if (g.isComplete) {
-            return {
-              ...row,
-              qualification: "qualified" as const,
-              qualificationLabel: "Round of 32 (3rd)",
-            };
-          }
-          return {
-            ...row,
-            qualification: "best-third" as const,
-            qualificationLabel: "3rd+ (on course)",
-          };
-        }
-
-        if (g.isComplete) {
-          return {
-            ...row,
-            qualification: "eliminated" as const,
-            qualificationLabel: "Eliminated",
-          };
-        }
-
+        const slot = thirdPlaceSlotStatus(topEightIds.has(row.teamId), g.isComplete);
         return {
           ...row,
-          qualification: "possible" as const,
-          qualificationLabel: "Outside top 8",
+          qualification: slot.qualification,
+          qualificationLabel: slot.label,
         };
       }),
     };
@@ -413,8 +425,15 @@ export interface BestThirdPlaceRow {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
-  qualifies: boolean;
+  /** Currently inside the live top eight — not final until all groups finish. */
+  inTopEight: boolean;
+  status: BestThirdStatus;
+  statusLabel: string;
   groupComplete: boolean;
+}
+
+export function isThirdPlaceRaceLive(groups: GroupStandings[]): boolean {
+  return groups.some((g) => !g.isComplete);
 }
 
 export function buildBestThirdPlaceTable(groups: GroupStandings[]): BestThirdPlaceRow[] {
@@ -433,24 +452,30 @@ export function buildBestThirdPlaceTable(groups: GroupStandings[]): BestThirdPla
       a.row.name.localeCompare(b.row.name)
   );
 
-  return ranked.map((entry, index) => ({
-    rank: index + 1,
-    group: entry.group,
-    teamId: entry.row.teamId,
-    name: entry.row.name,
-    code: entry.row.code,
-    flag_url: entry.row.flag_url,
-    played: entry.row.played,
-    won: entry.row.won,
-    drawn: entry.row.drawn,
-    lost: entry.row.lost,
-    goalsFor: entry.row.goalsFor,
-    goalsAgainst: entry.row.goalsAgainst,
-    goalDifference: entry.row.goalDifference,
-    points: entry.row.points,
-    qualifies: index < BEST_THIRD_SLOTS,
-    groupComplete: entry.isComplete,
-  }));
+  return ranked.map((entry, index) => {
+    const inTopEight = index < BEST_THIRD_SLOTS;
+    const slot = thirdPlaceSlotStatus(inTopEight, entry.isComplete);
+    return {
+      rank: index + 1,
+      group: entry.group,
+      teamId: entry.row.teamId,
+      name: entry.row.name,
+      code: entry.row.code,
+      flag_url: entry.row.flag_url,
+      played: entry.row.played,
+      won: entry.row.won,
+      drawn: entry.row.drawn,
+      lost: entry.row.lost,
+      goalsFor: entry.row.goalsFor,
+      goalsAgainst: entry.row.goalsAgainst,
+      goalDifference: entry.row.goalDifference,
+      points: entry.row.points,
+      inTopEight,
+      status: slot.status,
+      statusLabel: slot.label,
+      groupComplete: entry.isComplete,
+    };
+  });
 }
 
 export function buildGroupStandings(matches: Match[]): GroupStandings[] {

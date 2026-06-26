@@ -38,6 +38,10 @@ export function BracketTabs({
   );
 
   const bestThirdRows = useMemo(() => buildBestThirdPlaceTable(groups), [groups]);
+  const thirdPlaceRaceLive = useMemo(
+    () => groups.some((g) => !g.isComplete),
+    [groups]
+  );
 
   return (
     <div>
@@ -68,7 +72,8 @@ export function BracketTabs({
       {active === "groups" && (
         <div>
           <p className="text-sm text-white/40 mb-6">
-            Live group tables with qualification status — top 2 plus the best 8 third-placed teams advance.
+            Live group tables — top 2 plus the best 8 third-placed teams advance. Third-place spots stay
+            provisional until every group has finished.
           </p>
 
           {groups.length > 0 && (
@@ -103,7 +108,9 @@ export function BracketTabs({
             </div>
           )}
 
-          {groupFilter === "all" && <BestThirdPlaceTable rows={bestThirdRows} />}
+          {groupFilter === "all" && (
+            <BestThirdPlaceTable rows={bestThirdRows} groupsLive={thirdPlaceRaceLive} />
+          )}
 
           <GroupStandingsGrid groups={filteredGroups} />
         </div>

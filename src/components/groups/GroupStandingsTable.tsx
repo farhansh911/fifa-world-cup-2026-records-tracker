@@ -21,7 +21,7 @@ function shortStatusLabel(label: string): string {
     "Round of 32 (3rd)": "R32",
     "Best 3rd place": "3rd+",
     "3rd+ (on course)": "3rd+",
-    "Outside top 8": "3rd−",
+    "Can still qualify": "Alive",
     "3rd place": "3rd",
     Eliminated: "Out",
     "Can reach top 2": "Alive",
