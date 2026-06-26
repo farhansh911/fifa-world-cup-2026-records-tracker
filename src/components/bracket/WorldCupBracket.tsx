@@ -341,10 +341,12 @@ function BracketFit({ children }: { children: React.ReactNode }) {
 }
 
 export function WorldCupBracket({ groups = [], bracket = new Map() }: WorldCupBracketProps) {
-  const qualifiedCount = groups
-    .filter((g) => g.isComplete)
-    .flatMap((g) => g.rows)
-    .filter((r) => r.qualification === "qualified").length;
+  const qualifiedCount = new Set(
+    groups
+      .flatMap((g) => g.rows)
+      .filter((r) => r.qualification === "qualified" || r.qualification === "best-third")
+      .map((r) => r.teamId)
+  ).size;
 
   return (
     <section className="relative">

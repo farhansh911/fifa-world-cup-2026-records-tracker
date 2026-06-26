@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { GroupStandings } from "@/lib/group-standings";
+import { buildBestThirdPlaceTable } from "@/lib/group-standings";
 import { bracketMatchesByNumber, type BracketViewMatch } from "@/lib/bracket";
 import { GroupStandingsGrid } from "@/components/groups/GroupStandingsTable";
+import { BestThirdPlaceTable } from "@/components/groups/BestThirdPlaceTable";
 import { WorldCupBracket } from "@/components/bracket/WorldCupBracket";
 
 type Tab = "groups" | "bracket";
@@ -34,6 +36,8 @@ export function BracketTabs({
     () => (groupFilter === "all" ? groups : groups.filter((g) => g.group === groupFilter)),
     [groups, groupFilter]
   );
+
+  const bestThirdRows = useMemo(() => buildBestThirdPlaceTable(groups), [groups]);
 
   return (
     <div>
@@ -98,6 +102,8 @@ export function BracketTabs({
               ))}
             </div>
           )}
+
+          {groupFilter === "all" && <BestThirdPlaceTable rows={bestThirdRows} />}
 
           <GroupStandingsGrid groups={filteredGroups} />
         </div>

@@ -319,8 +319,8 @@ function assignQualification(
       qualification = "possible";
       qualificationLabel = row.position <= DIRECT_QUALIFIERS ? "Top 2" : "Can reach top 2";
     } else if (canReachThird) {
-      qualification = "best-third";
-      qualificationLabel = "Best 3rd place";
+      qualification = "possible";
+      qualificationLabel = row.position === 3 ? "3rd place" : "Can reach 3rd";
     } else {
       qualification = "eliminated";
       qualificationLabel = "Eliminated";
@@ -330,70 +330,127 @@ function assignQualification(
   });
 }
 
-function markBestThirdPlace(groups: GroupStandings[]): GroupStandings[] {
-  const thirdPlace = groups
-    .map((g) => g.rows.find((r) => r.position === 3 && g.isComplete))
-    .filter((r): r is GroupStandingRow => r != null);
-
-  const rankedThirds = sortRows(thirdPlace).slice(0, BEST_THIRD_SLOTS);
-  const qualifiedThirdNames = new Set(rankedThirds.map((r) => r.name));
-
-  return groups.map((g) => ({
-    ...g,
-    rows: g.rows.map((row) => {
-      if (row.position !== 3 || !g.isComplete) return row;
-      if (qualifiedThirdNames.has(row.name)) {
-        return {
-          ...row,
-          qualification: "qualified" as const,
-          qualificationLabel: "Round of 32 (3rd)",
-        };
-      }
-      return {
-        ...row,
-        qualification: "eliminated" as const,
-        qualificationLabel: "Eliminated",
-      };
-    }),
-  }));
+function getThirdPlaceCandidate(g: GroupStandings): GroupStandingRow | null {
+  const sorted = sortRows(g.rows);
+  const third = sorted[2];
+  if (!third || third.played === 0) return null;
+  return third;
 }
 
-/** While groups are still playing, highlight 3rd-place teams currently in the best-eight third-placed race. */
-function markLiveBestThirdPlace(groups: GroupStandings[]): GroupStandings[] {
-  const thirdCandidates = groups
-    .flatMap((g) =>
-      g.rows.filter(
-        (r) =>
-          r.played > 0 &&
-          !g.isComplete &&
-          r.qualification !== "qualified" &&
-          r.qualification !== "eliminated" &&
-          (r.position === 3 || r.qualification === "best-third")
-      )
-    );
+/** Rank all 12 third-placed sides; top 8 advance to the Round of 32. */
+function applyCrossGroupThirdRanking(groups: GroupStandings[]): GroupStandings[] {
+  const entries = groups
+    .map((g) => {
+      const third = getThirdPlaceCandidate(g);
+      return third ? { group: g.group, row: third, isComplete: g.isComplete } : null;
+    })
+    .filter((e): e is { group: string; row: GroupStandingRow; isComplete: boolean } => e != null);
 
-  if (thirdCandidates.length === 0) return groups;
+  const ranked = [...entries].sort(
+    (a, b) =>
+      b.row.points - a.row.points ||
+      b.row.goalDifference - a.row.goalDifference ||
+      b.row.goalsFor - a.row.goalsFor ||
+      a.row.name.localeCompare(b.row.name)
+  );
 
-  const rankedThirds = sortRows(thirdCandidates).slice(0, BEST_THIRD_SLOTS);
-  const inTopEightThirds = new Set(rankedThirds.map((r) => r.teamId));
+  const topEightIds = new Set(ranked.slice(0, BEST_THIRD_SLOTS).map((e) => e.row.teamId));
 
   return groups.map((g) => {
-    if (g.isComplete) return g;
+    const third = getThirdPlaceCandidate(g);
+    if (!third) return g;
+
     return {
       ...g,
       rows: g.rows.map((row) => {
-        if (row.qualification === "eliminated" || row.qualification === "qualified") return row;
-        if (inTopEightThirds.has(row.teamId)) {
+        if (row.teamId !== third.teamId) return row;
+
+        if (topEightIds.has(row.teamId)) {
+          if (g.isComplete) {
+            return {
+              ...row,
+              qualification: "qualified" as const,
+              qualificationLabel: "Round of 32 (3rd)",
+            };
+          }
           return {
             ...row,
             qualification: "best-third" as const,
-            qualificationLabel: "Best 3rd place",
+            qualificationLabel: "3rd+ (on course)",
           };
         }
-        return row;
+
+        if (g.isComplete) {
+          return {
+            ...row,
+            qualification: "eliminated" as const,
+            qualificationLabel: "Eliminated",
+          };
+        }
+
+        return {
+          ...row,
+          qualification: "possible" as const,
+          qualificationLabel: "Outside top 8",
+        };
       }),
     };
   });
+}
+
+export interface BestThirdPlaceRow {
+  rank: number;
+  group: string;
+  teamId: string;
+  name: string;
+  code: string;
+  flag_url: string | null;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  qualifies: boolean;
+  groupComplete: boolean;
+}
+
+export function buildBestThirdPlaceTable(groups: GroupStandings[]): BestThirdPlaceRow[] {
+  const entries = groups
+    .map((g) => {
+      const third = getThirdPlaceCandidate(g);
+      return third ? { group: g.group, row: third, isComplete: g.isComplete } : null;
+    })
+    .filter((e): e is { group: string; row: GroupStandingRow; isComplete: boolean } => e != null);
+
+  const ranked = [...entries].sort(
+    (a, b) =>
+      b.row.points - a.row.points ||
+      b.row.goalDifference - a.row.goalDifference ||
+      b.row.goalsFor - a.row.goalsFor ||
+      a.row.name.localeCompare(b.row.name)
+  );
+
+  return ranked.map((entry, index) => ({
+    rank: index + 1,
+    group: entry.group,
+    teamId: entry.row.teamId,
+    name: entry.row.name,
+    code: entry.row.code,
+    flag_url: entry.row.flag_url,
+    played: entry.row.played,
+    won: entry.row.won,
+    drawn: entry.row.drawn,
+    lost: entry.row.lost,
+    goalsFor: entry.row.goalsFor,
+    goalsAgainst: entry.row.goalsAgainst,
+    goalDifference: entry.row.goalDifference,
+    points: entry.row.points,
+    qualifies: index < BEST_THIRD_SLOTS,
+    groupComplete: entry.isComplete,
+  }));
 }
 
 export function buildGroupStandings(matches: Match[]): GroupStandings[] {
@@ -472,7 +529,7 @@ export function buildGroupStandings(matches: Match[]): GroupStandings[] {
     });
   }
 
-  return markLiveBestThirdPlace(markBestThirdPlace(standings));
+  return applyCrossGroupThirdRanking(standings);
 }
 
 export function getGroupStandingsForGroup(matches: Match[], group: string): GroupStandings | null {
