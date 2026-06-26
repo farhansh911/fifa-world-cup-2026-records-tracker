@@ -108,8 +108,8 @@ function buildKnockoutWinners(
 
       const homeRaw = m.home_team?.name ?? "TBD";
       const awayRaw = m.away_team?.name ?? "TBD";
-      const homeSlot = resolveKnockoutSlot(homeRaw, standings, winners);
-      const awaySlot = resolveKnockoutSlot(awayRaw, standings, winners);
+      const homeSlot = resolveKnockoutSlot(homeRaw, standings, winners, num);
+      const awaySlot = resolveKnockoutSlot(awayRaw, standings, winners, num);
       const homeName = homeSlot.team ?? homeRaw;
       const awayName = awaySlot.team ?? awayRaw;
 
@@ -150,8 +150,8 @@ export function buildKnockoutBracketView(
       id: m.id,
       homeRaw,
       awayRaw,
-      home: resolveKnockoutSlot(homeRaw, groups, winners),
-      away: resolveKnockoutSlot(awayRaw, groups, winners),
+      home: resolveKnockoutSlot(homeRaw, groups, winners, num),
+      away: resolveKnockoutSlot(awayRaw, groups, winners, num),
       homeScore: m.home_score,
       awayScore: m.away_score,
       status: m.status,
@@ -182,8 +182,9 @@ export function buildTournamentBracket(matches: Match[]): BracketRound[] {
     const meta = STAGE_ORDER[key] ?? { order: 99, label: m.summary ?? "Knockout" };
     const homeRaw = m.home_team?.name ?? "TBD";
     const awayRaw = m.away_team?.name ?? "TBD";
-    const homeSlot = resolveKnockoutSlot(homeRaw, standings, winners);
-    const awaySlot = resolveKnockoutSlot(awayRaw, standings, winners);
+    const matchNumber = parseMatchNumber(m.id);
+    const homeSlot = resolveKnockoutSlot(homeRaw, standings, winners, matchNumber ?? undefined);
+    const awaySlot = resolveKnockoutSlot(awayRaw, standings, winners, matchNumber ?? undefined);
     const homeTeam = homeSlot.team ?? homeSlot.code;
     const awayTeam = awaySlot.team ?? awaySlot.code;
 

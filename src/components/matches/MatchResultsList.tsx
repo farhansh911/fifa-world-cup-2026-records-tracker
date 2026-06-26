@@ -80,11 +80,12 @@ export function MatchResultsList({ matches }: MatchResultsListProps) {
                         {match.home.name}
                       </span>
                       <span className="text-xs font-semibold shrink-0 sm:hidden">{match.home.code}</span>
-                      <TeamFlag {...match.home} size={36} className="shrink-0" />
+                      <TeamFlag {...match.home} size={28} className="shrink-0 sm:hidden" />
+                      <TeamFlag {...match.home} size={36} className="shrink-0 hidden sm:block" />
                     </div>
 
                     <div className="shrink-0 flex flex-col items-center px-1 sm:px-2">
-                      <span className="font-display text-lg sm:text-2xl font-bold tabular-nums leading-none">
+                      <span className="font-display text-base sm:text-2xl font-bold tabular-nums leading-none">
                         {scoreLine ?? "—"}
                       </span>
                       {match.group_name && (
@@ -95,7 +96,8 @@ export function MatchResultsList({ matches }: MatchResultsListProps) {
                     </div>
 
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <TeamFlag {...match.away} size={36} className="shrink-0" />
+                      <TeamFlag {...match.away} size={28} className="shrink-0 sm:hidden" />
+                      <TeamFlag {...match.away} size={36} className="shrink-0 hidden sm:block" />
                       <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
                         {match.away.name}
                       </span>

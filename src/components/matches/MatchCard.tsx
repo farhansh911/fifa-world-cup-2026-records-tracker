@@ -46,7 +46,7 @@ export function MatchCard({ match }: MatchCardProps) {
     <Link href={`/matches/${match.id}`} className="block group min-w-0">
       <article className={cn("card card-hover p-3.5 sm:p-4 min-w-0", isLive && "border-red-500/30")}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <Badge variant={isLive ? "live" : "default"} className={getStatusColor(status)}>
               {isLive && minute != null ? `${minute}'` : isScheduled ? "Upcoming" : isCompleted ? "FT" : status}
             </Badge>
@@ -57,10 +57,10 @@ export function MatchCard({ match }: MatchCardProps) {
               kickoffUtc={match.match_date}
               hostCity={match.host_city}
               variant="dateTime"
-              className="text-[10px] sm:text-xs text-white/35 leading-tight"
+              className="text-[10px] sm:text-xs text-white/35 leading-tight shrink-0"
             />
           ) : (
-            <span className="text-[10px] sm:text-xs text-white/35 truncate">{match.stadium || match.venue}</span>
+            <span className="text-[10px] sm:text-xs text-white/35 truncate max-w-full">{match.stadium || match.venue}</span>
           )}
         </div>
 

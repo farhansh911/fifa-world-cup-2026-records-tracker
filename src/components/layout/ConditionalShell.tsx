@@ -15,7 +15,7 @@ export function ConditionalShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      <main className="min-h-screen">{children}</main>
+      <main className="min-h-screen overflow-x-clip min-w-0">{children}</main>
       <Footer />
     </>
   );

@@ -1,4 +1,8 @@
 import type { GroupStandings } from "@/lib/group-standings";
+import {
+  resolveAnnexCThirdPlaceTeam,
+  THIRD_PLACE_MATCH_WINNER,
+} from "@/lib/third-place-lookup";
 
 /** Short FIFA-style code shown until a slot is locked. */
 export function formatKnockoutCode(label: string): string {
@@ -56,7 +60,8 @@ function resolveThirdPlaceTeam(standings: GroupStandings[]): Map<string, string>
 export function resolveKnockoutSlot(
   label: string,
   standings: GroupStandings[],
-  knockoutWinners: Map<number, string>
+  knockoutWinners: Map<number, string>,
+  matchNumber?: number
 ): KnockoutSlotDisplay {
   const code = formatKnockoutCode(label);
 
@@ -66,6 +71,10 @@ export function resolveKnockoutSlot(
     if (g?.isComplete) {
       const leader = g.rows.find((r) => r.position === 1);
       return { code, team: leader?.name ?? null, resolved: true };
+    }
+    const leader = g?.rows.find((r) => r.position === 1);
+    if (leader && leader.qualification === "qualified") {
+      return { code, team: leader.name, resolved: true };
     }
     return { code, team: null, resolved: false };
   }
@@ -81,6 +90,16 @@ export function resolveKnockoutSlot(
   }
 
   if (/third place/i.test(label)) {
+    const winnerGroup =
+      matchNumber != null ? THIRD_PLACE_MATCH_WINNER[matchNumber] : undefined;
+
+    if (winnerGroup) {
+      const annex = resolveAnnexCThirdPlaceTeam(winnerGroup, standings);
+      if (annex) {
+        return { code: "3rd", team: annex.name, resolved: annex.resolved };
+      }
+    }
+
     if (!allGroupsComplete(standings)) {
       return { code: "3rd", team: null, resolved: false };
     }

@@ -36,6 +36,8 @@ html.light-mode {
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   body {
@@ -43,6 +45,8 @@ html.light-mode {
     background-color: var(--theme-bg);
     @apply antialiased min-h-screen;
     font-family: var(--font-body);
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {

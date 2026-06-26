@@ -132,65 +132,84 @@ export function MatchScheduleList({
                     key={match.id}
                     href={`/matches/${match.id}`}
                     className={cn(
-                      "flex items-center hover:bg-white/[0.03] transition-colors group",
-                      compact ? "gap-2 px-3 py-3" : "gap-3 sm:gap-4 px-4 py-3 sm:py-4",
+                      "block hover:bg-white/[0.03] transition-colors group min-w-0",
+                      compact ? "px-3 py-3" : "px-3 sm:px-4 py-3 sm:py-4",
                       match.status === "live" && "bg-red-500/[0.03]",
                       nextUp.some((n) => n.id === match.id) && match.status !== "live" && "bg-accent/[0.03]"
                     )}
                   >
-                    <div className={cn("shrink-0 text-right", compact ? "w-[4.25rem]" : "w-[4.5rem] sm:w-24")}>
+                    {/* Mobile: time/meta row, then match row */}
+                    <div className="flex items-center justify-between gap-2 mb-2.5 sm:hidden min-w-0">
                       <MatchKickoffTime
                         kickoffUtc={match.match_date}
                         hostCity={match.host_city}
                         variant="time"
-                        className="text-[11px] sm:text-xs text-white/45 leading-tight"
-                        secondaryClassName="text-[8px] sm:text-[9px] leading-tight"
+                        className="text-[11px] text-white/45 leading-tight"
+                        secondaryClassName="text-[8px] leading-tight"
                       />
-                      {match.group_name && (
-                        <div className="mt-1 flex justify-end">
-                          <GroupBadge group={match.group_name} />
-                        </div>
-                      )}
-                      {match.status === "live" && (
-                        <p className="text-[10px] text-red-400 font-semibold mt-0.5">LIVE {match.minute}&apos;</p>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {match.group_name && <GroupBadge group={match.group_name} />}
+                        {match.status === "live" && (
+                          <span className="text-[10px] text-red-400 font-semibold">LIVE {match.minute}&apos;</span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2.5">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
-                        <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
-                          {match.home.name}
-                        </span>
-                        <span className="text-xs font-semibold shrink-0 sm:hidden">{match.home.code}</span>
-                        <TeamFlag {...match.home} size={compact ? 22 : 28} className="shrink-0" />
-                      </div>
-
-                      <div className="shrink-0 flex items-center justify-center px-0.5">
-                        {match.status === "scheduled" || match.status === "postponed" ? (
-                          <span className="text-[11px] text-white/30 font-medium leading-none">vs</span>
-                        ) : formatScoreLine(match.status, match.home_score, match.away_score) ? (
-                          <span className="font-display font-bold tabular-nums text-sm sm:text-base leading-none">
-                            {formatScoreLine(match.status, match.home_score, match.away_score)}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-white/30 font-medium leading-none">FT</span>
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                      <div className={cn("shrink-0 text-right hidden sm:block", compact ? "w-[4.25rem]" : "w-24")}>
+                        <MatchKickoffTime
+                          kickoffUtc={match.match_date}
+                          hostCity={match.host_city}
+                          variant="time"
+                          className="text-[11px] sm:text-xs text-white/45 leading-tight"
+                          secondaryClassName="text-[8px] sm:text-[9px] leading-tight"
+                        />
+                        {match.group_name && (
+                          <div className="mt-1 flex justify-end">
+                            <GroupBadge group={match.group_name} />
+                          </div>
+                        )}
+                        {match.status === "live" && (
+                          <p className="text-[10px] text-red-400 font-semibold mt-0.5">LIVE {match.minute}&apos;</p>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        <TeamFlag {...match.away} size={compact ? 22 : 28} className="shrink-0" />
-                        <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
-                          {match.away.name}
-                        </span>
-                        <span className="text-xs font-semibold shrink-0 sm:hidden">{match.away.code}</span>
-                      </div>
-                    </div>
+                      <div className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2.5">
+                        <div className="flex items-center gap-1 min-w-0 flex-1 justify-end">
+                          <span className="text-sm font-medium truncate text-right group-hover:text-accent transition-colors hidden sm:inline">
+                            {match.home.name}
+                          </span>
+                          <span className="text-xs font-semibold shrink-0 sm:hidden">{match.home.code}</span>
+                          <TeamFlag {...match.home} size={compact ? 22 : 28} className="shrink-0" />
+                        </div>
 
-                    {showVenue && (match.stadium || match.venue) && !compact && (
-                      <p className="hidden lg:block text-xs text-white/30 w-36 truncate shrink-0 text-right">
-                        {match.stadium || match.venue}
-                      </p>
-                    )}
+                        <div className="shrink-0 flex items-center justify-center px-0.5">
+                          {match.status === "scheduled" || match.status === "postponed" ? (
+                            <span className="text-[11px] text-white/30 font-medium leading-none">vs</span>
+                          ) : formatScoreLine(match.status, match.home_score, match.away_score) ? (
+                            <span className="font-display font-bold tabular-nums text-sm sm:text-base leading-none">
+                              {formatScoreLine(match.status, match.home_score, match.away_score)}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-white/30 font-medium leading-none">FT</span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 min-w-0 flex-1">
+                          <TeamFlag {...match.away} size={compact ? 22 : 28} className="shrink-0" />
+                          <span className="text-sm font-medium truncate group-hover:text-accent transition-colors hidden sm:inline">
+                            {match.away.name}
+                          </span>
+                          <span className="text-xs font-semibold shrink-0 sm:hidden">{match.away.code}</span>
+                        </div>
+                      </div>
+
+                      {showVenue && (match.stadium || match.venue) && !compact && (
+                        <p className="hidden lg:block text-xs text-white/30 w-36 truncate shrink-0 text-right">
+                          {match.stadium || match.venue}
+                        </p>
+                      )}
+                    </div>
                   </Link>
                 ))}
               </div>

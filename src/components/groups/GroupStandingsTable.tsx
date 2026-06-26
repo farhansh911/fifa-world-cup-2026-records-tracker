@@ -66,7 +66,7 @@ function MobileRow({ row, highlight }: { row: GroupStandingRow; highlight: boole
         <TeamFlag name={row.name} code={row.code} flag_url={row.flag_url} size={32} />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={cn("font-semibold text-sm leading-tight", highlight && "text-accent")}>
+            <p className={cn("font-semibold text-sm leading-tight truncate", highlight && "text-accent")}>
               {row.name}
             </p>
             <div className="text-right shrink-0">

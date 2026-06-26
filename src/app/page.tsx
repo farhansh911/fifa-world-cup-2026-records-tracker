@@ -121,7 +121,7 @@ export default async function HomePage() {
         upcomingSchedule={upcomingSchedule}
       />
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 border-b border-white/[0.06] overflow-x-hidden min-w-0">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 border-b border-white/[0.06] overflow-x-clip min-w-0">
         <SectionHeading
           title="Live now"
           action={<Link href="/matches" className="text-sm text-white/45 hover:text-white transition-colors whitespace-nowrap">Match center →</Link>}
@@ -129,11 +129,11 @@ export default async function HomePage() {
         <LiveMatchBoardServer />
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden min-w-0">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-clip min-w-0">
         <StatsGrid stats={statItems} />
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 overflow-x-hidden min-w-0">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 overflow-x-clip min-w-0">
         <SectionHeading
           title="Match center"
           action={<Link href="/matches" className="text-sm text-white/45 hover:text-white transition-colors whitespace-nowrap">All matches →</Link>}

@@ -136,7 +136,7 @@ export function HeroSection({ stats, featuredMatches, latestRecord, recordChase,
         .from(".hero-body", { opacity: 0, y: 24, duration: 0.55 }, "-=0.35")
         .from(".hero-btn", { opacity: 0, y: 16, duration: 0.45, stagger: 0.1 }, "-=0.25")
         .from(".hero-meta", { opacity: 0, duration: 0.5 }, "-=0.2")
-        .from(".hero-panel", { opacity: 0, x: 32, duration: 0.65 }, "-=0.5")
+        .from(".hero-panel", { opacity: 0, y: 24, duration: 0.65 }, "-=0.5")
         .from(".hero-panel-block", { opacity: 0, y: 16, duration: 0.45, stagger: 0.08 }, "-=0.4");
     },
     { scope: container }
@@ -155,7 +155,7 @@ export function HeroSection({ stats, featuredMatches, latestRecord, recordChase,
                 <span className="leading-snug">Tournament live · USA · Canada · Mexico</span>
               </p>
 
-              <h1 className="font-display text-[2.25rem] sm:text-6xl lg:text-[3.5rem] xl:text-7xl font-black leading-[1.02] tracking-tight mb-5 sm:mb-6">
+              <h1 className="font-display text-3xl sm:text-6xl lg:text-[3.5rem] xl:text-7xl font-black leading-[1.02] tracking-tight mb-5 sm:mb-6 break-words">
                 {["World Cup 2026", "Record Tracker"].map((line) => (
                   <span key={line} className="block overflow-hidden pb-1">
                     <span className="hero-line-inner block">{line}</span>

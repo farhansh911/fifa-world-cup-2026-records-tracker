@@ -77,7 +77,7 @@ function Scoreboard({ match, large = false }: { match: LiveMatchView; large?: bo
   return (
     <Link href={href} className="block group min-w-0">
       <div className={cn("flex items-center justify-between gap-2 sm:gap-4 min-w-0", large ? "py-1 sm:py-2" : "py-3 sm:py-4")}>
-        <div className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex-1 flex flex-col items-center gap-1 sm:gap-2 min-w-0">
           <TeamFlag
             name={match.home.name}
             code={match.home.code}
@@ -92,20 +92,21 @@ function Scoreboard({ match, large = false }: { match: LiveMatchView; large?: bo
             size={large ? 56 : 48}
             className="hidden sm:block"
           />
-          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors px-1", large ? "text-sm sm:text-base" : "text-xs sm:text-sm")}>
-            {match.home.name}
+          <span className="font-semibold text-center truncate w-full group-hover:text-accent transition-colors px-1 text-xs sm:text-sm">
+            <span className="sm:hidden">{match.home.code}</span>
+            <span className="hidden sm:inline">{match.home.name}</span>
           </span>
         </div>
 
         <div className="shrink-0 text-center px-1 sm:px-2">
-          <div className={cn("font-display font-black tabular-nums tracking-tight leading-none", large ? "text-3xl sm:text-5xl lg:text-6xl" : "text-3xl sm:text-4xl lg:text-5xl")}>
+          <div className={cn("font-display font-black tabular-nums tracking-tight leading-none", large ? "text-3xl sm:text-5xl lg:text-6xl" : "text-2xl sm:text-4xl lg:text-5xl")}>
             {match.home.score}
             <span className="text-white/25 mx-0.5 sm:mx-1">–</span>
             {match.away.score}
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex-1 flex flex-col items-center gap-1 sm:gap-2 min-w-0">
           <TeamFlag
             name={match.away.name}
             code={match.away.code}
@@ -120,8 +121,9 @@ function Scoreboard({ match, large = false }: { match: LiveMatchView; large?: bo
             size={large ? 56 : 48}
             className="hidden sm:block"
           />
-          <span className={cn("font-semibold text-center truncate w-full group-hover:text-accent transition-colors px-1", large ? "text-sm sm:text-base" : "text-xs sm:text-sm")}>
-            {match.away.name}
+          <span className="font-semibold text-center truncate w-full group-hover:text-accent transition-colors px-1 text-xs sm:text-sm">
+            <span className="sm:hidden">{match.away.code}</span>
+            <span className="hidden sm:inline">{match.away.name}</span>
           </span>
         </div>
       </div>

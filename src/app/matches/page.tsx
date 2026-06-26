@@ -28,7 +28,7 @@ export default async function MatchesPage() {
   return (
     <>
       <PageBanner badge="Fixtures" title="Match center" subtitle="Full schedule, live scores, and results." />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-clip min-w-0">
         <MatchCenterTabs
           schedule={schedule}
           live={live}
