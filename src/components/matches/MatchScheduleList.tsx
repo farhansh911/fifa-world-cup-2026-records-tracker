@@ -6,6 +6,7 @@ import { formatScoreLine } from "@/lib/team-aliases";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import { MatchKickoffTime } from "@/components/matches/MatchKickoffTime";
 import { GroupBadge } from "@/components/matches/GroupBadge";
+import { StageBadge } from "@/components/matches/StageBadge";
 import { ScheduleNextUp } from "@/components/matches/ScheduleNextUp";
 import { cn } from "@/lib/utils";
 import {
@@ -148,7 +149,11 @@ export function MatchScheduleList({
                         secondaryClassName="text-[8px] leading-tight"
                       />
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {match.group_name && <GroupBadge group={match.group_name} />}
+                        {match.group_name ? (
+                          <GroupBadge group={match.group_name} />
+                        ) : (
+                          <StageBadge stage={match.stage_label} />
+                        )}
                         {match.status === "live" && (
                           <span className="text-[10px] text-red-400 font-semibold">LIVE {match.minute}&apos;</span>
                         )}
@@ -164,11 +169,15 @@ export function MatchScheduleList({
                           className="text-[11px] sm:text-xs text-white/45 leading-tight"
                           secondaryClassName="text-[8px] sm:text-[9px] leading-tight"
                         />
-                        {match.group_name && (
+                        {match.group_name ? (
                           <div className="mt-1 flex justify-end">
                             <GroupBadge group={match.group_name} />
                           </div>
-                        )}
+                        ) : match.stage_label ? (
+                          <div className="mt-1 flex justify-end">
+                            <StageBadge stage={match.stage_label} />
+                          </div>
+                        ) : null}
                         {match.status === "live" && (
                           <p className="text-[10px] text-red-400 font-semibold mt-0.5">LIVE {match.minute}&apos;</p>
                         )}

@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { Match, MatchStatus, Team } from "@/types/database";
 import { fetchEspnScoreOverlays, type ScoreOverlay } from "@/lib/espn-scores";
 import { buildMatchKey, buildDayMatchKey, canonicalTeamName } from "@/lib/team-aliases";
+import { enrichKnockoutMatches } from "@/lib/knockout-fixtures";
 import { formatHostCity, getFlagUrl, getTeamCode } from "@/lib/team-codes";
 
 const FIXTURES_URL = "https://www.thestatsapi.com/world-cup/data/fixtures.json";
@@ -180,24 +181,31 @@ async function loadFixtures(): Promise<Match[]> {
 
   const json = (await fixturesRes.json()) as { fixtures: StatsApiFixture[] };
 
-  return json.fixtures.map((f) => {
-    let match = statsFixtureToMatch(f);
+  const rawMatches = json.fixtures.map((f) => statsFixtureToMatch(f));
+  const matches = enrichKnockoutMatches(rawMatches);
 
-    const espn = lookupOverlay(espnOverlays, f.homeTeam, f.awayTeam, f.kickoffUtc);
+  return matches.map((match) => {
+    const home = match.home_team?.name ?? "";
+    const away = match.away_team?.name ?? "";
+    const kickoff = match.match_date;
+
+    let result = match;
+
+    const espn = lookupOverlay(espnOverlays, home, away, kickoff);
     if (espn) {
-      match = applyOverlay(match, espn, "espn");
+      result = applyOverlay(result, espn, "espn");
     }
 
-    const apiFootball = lookupOverlay(apiFootballOverlays, f.homeTeam, f.awayTeam, f.kickoffUtc);
+    const apiFootball = lookupOverlay(apiFootballOverlays, home, away, kickoff);
     if (apiFootball) {
-      match = applyOverlay(match, apiFootball, "api-football");
+      result = applyOverlay(result, apiFootball, "api-football");
     }
 
-    return match;
+    return result;
   });
 }
 
-export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v6"], {
+export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v7"], {
   revalidate: 30,
 });
 

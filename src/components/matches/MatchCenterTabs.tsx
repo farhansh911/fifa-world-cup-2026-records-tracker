@@ -49,18 +49,24 @@ export function MatchCenterTabs({
     return [...set].sort();
   }, [schedule]);
 
-  const filteredSchedule = useMemo(
-    () => (groupFilter === "all" ? schedule : schedule.filter((m) => m.group_name === groupFilter)),
-    [schedule, groupFilter]
-  );
+  const hasKnockout = useMemo(() => schedule.some((m) => m.stage_label), [schedule]);
 
-  const filteredCompleted = useMemo(
-    () =>
-      groupFilter === "all"
-        ? completed
-        : completed.filter((m) => (m.group_name ?? m.home_team?.group_name) === groupFilter),
-    [completed, groupFilter]
-  );
+  const filteredSchedule = useMemo(() => {
+    if (groupFilter === "all") return schedule;
+    if (groupFilter === "knockout") return schedule.filter((m) => m.stage_label);
+    return schedule.filter((m) => m.group_name === groupFilter);
+  }, [schedule, groupFilter]);
+
+  const filteredCompleted = useMemo(() => {
+    if (groupFilter === "all") return completed;
+    if (groupFilter === "knockout") {
+      return completed.filter((m) => {
+        const summary = m.summary?.toLowerCase().trim();
+        return summary && summary !== "group stage";
+      });
+    }
+    return completed.filter((m) => (m.group_name ?? m.home_team?.group_name) === groupFilter);
+  }, [completed, groupFilter]);
 
   const selectedGroupStandings = useMemo(
     () => (groupFilter === "all" ? null : groupStandings.find((g) => g.group === groupFilter) ?? null),
@@ -90,7 +96,7 @@ export function MatchCenterTabs({
         ))}
       </div>
 
-      {(active === "schedule" || active === "results") && groups.length > 0 && (
+      {(active === "schedule" || active === "results") && (groups.length > 0 || hasKnockout) && (
         <div className="-mx-4 px-4 sm:mx-0 sm:px-0 mb-5 sm:mb-6 overflow-x-auto">
           <div className="flex gap-2 w-max sm:w-auto sm:flex-wrap pb-1">
             <button
@@ -103,8 +109,22 @@ export function MatchCenterTabs({
                   : "border-white/10 text-white/45 hover:text-white/70"
               )}
             >
-              All groups
+              All matches
             </button>
+            {hasKnockout && (
+              <button
+                type="button"
+                onClick={() => setGroupFilter("knockout")}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors whitespace-nowrap shrink-0",
+                  groupFilter === "knockout"
+                    ? "bg-violet-500/20 text-violet-300 border-violet-500/40"
+                    : "border-white/10 text-white/45 hover:text-white/70"
+                )}
+              >
+                Knockout
+              </button>
+            )}
             {groups.map((g) => (
               <button
                 key={g}

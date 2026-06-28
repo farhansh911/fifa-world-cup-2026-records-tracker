@@ -6,36 +6,16 @@ import { formatScoreLine } from "@/lib/team-aliases";
 import { TeamFlag } from "@/components/matches/TeamFlag";
 import { GroupBadge } from "@/components/matches/GroupBadge";
 import { cn } from "@/lib/utils";
-import { groupMatchesByDate, type ScheduleMatch } from "@/lib/matches";
+import { groupMatchesByDate, toScheduleMatch } from "@/lib/matches";
 import type { Match } from "@/types/database";
+import { StageBadge } from "@/components/matches/StageBadge";
 
 interface MatchResultsListProps {
   matches: Match[];
 }
 
-function toScheduleFromMatch(match: Match): ScheduleMatch {
-  return {
-    id: match.id,
-    home: {
-      name: match.home_team?.name ?? "TBD",
-      code: match.home_team?.code ?? "?",
-      flag_url: match.home_team?.flag_url ?? null,
-    },
-    away: {
-      name: match.away_team?.name ?? "TBD",
-      code: match.away_team?.code ?? "?",
-      flag_url: match.away_team?.flag_url ?? null,
-    },
-    home_score: match.home_score,
-    away_score: match.away_score,
-    status: match.status,
-    minute: match.minute,
-    match_date: match.match_date,
-    host_city: match.host_city ?? null,
-    group_name: match.group_name ?? match.home_team?.group_name ?? null,
-    stadium: match.stadium,
-    venue: match.venue,
-  };
+function toScheduleFromMatch(match: Match) {
+  return toScheduleMatch(match);
 }
 
 export function MatchResultsList({ matches }: MatchResultsListProps) {
@@ -88,11 +68,15 @@ export function MatchResultsList({ matches }: MatchResultsListProps) {
                       <span className="font-display text-base sm:text-2xl font-bold tabular-nums leading-none">
                         {scoreLine ?? "—"}
                       </span>
-                      {match.group_name && (
+                      {match.group_name ? (
                         <div className="mt-1.5 sm:hidden">
                           <GroupBadge group={match.group_name} />
                         </div>
-                      )}
+                      ) : match.stage_label ? (
+                        <div className="mt-1.5 sm:hidden">
+                          <StageBadge stage={match.stage_label} />
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -104,11 +88,15 @@ export function MatchResultsList({ matches }: MatchResultsListProps) {
                       <span className="text-xs font-semibold shrink-0 sm:hidden">{match.away.code}</span>
                     </div>
 
-                    {match.group_name && (
+                    {match.group_name ? (
                       <div className="hidden sm:block shrink-0">
                         <GroupBadge group={match.group_name} />
                       </div>
-                    )}
+                    ) : match.stage_label ? (
+                      <div className="hidden sm:block shrink-0">
+                        <StageBadge stage={match.stage_label} />
+                      </div>
+                    ) : null}
                   </div>
 
                   {(goalLine || match.stadium) && (

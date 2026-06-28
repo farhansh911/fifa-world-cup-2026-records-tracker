@@ -1,6 +1,28 @@
 import type { Match } from "@/types/database";
 import { formatMatchDateHeader } from "@/lib/match-timezones";
 
+const STAGE_LABELS: Record<string, string> = {
+  "round of 32": "Round of 32",
+  "round of 16": "Round of 16",
+  "quarter finals": "Quarter-finals",
+  "semi finals": "Semi-finals",
+  "third place": "Third place",
+  final: "Final",
+};
+
+export function formatStageLabel(summary: string | null | undefined): string | null {
+  if (!summary) return null;
+  const key = summary.toLowerCase().trim();
+  if (key === "group stage") return null;
+  return STAGE_LABELS[key] ?? summary;
+}
+
+function parseMatchNumber(id: string): number | null {
+  const n = id.replace(/^wc2026-/, "");
+  const num = parseInt(n, 10);
+  return Number.isNaN(num) ? null : num;
+}
+
 export interface ScheduleMatch {
   id: string;
   home: { name: string; code: string; flag_url: string | null };
@@ -12,6 +34,8 @@ export interface ScheduleMatch {
   match_date: string;
   host_city: string | null;
   group_name: string | null;
+  stage_label: string | null;
+  match_number: number | null;
   stadium: string | null;
   venue: string | null;
 }
@@ -36,6 +60,8 @@ export function toScheduleMatch(match: Match): ScheduleMatch {
     match_date: match.match_date,
     host_city: match.host_city ?? null,
     group_name: match.group_name ?? match.home_team?.group_name ?? null,
+    stage_label: formatStageLabel(match.summary),
+    match_number: parseMatchNumber(match.id),
     stadium: match.stadium,
     venue: match.venue,
   };
