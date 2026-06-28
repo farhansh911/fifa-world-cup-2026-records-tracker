@@ -11,6 +11,19 @@ export interface ScoreOverlay {
   attendance: number | null;
 }
 
+export interface EspnFixtureRef {
+  homeTeam: string;
+  awayTeam: string;
+  kickoff: string;
+  overlay: ScoreOverlay;
+}
+
+export interface EspnFetchResult {
+  overlays: Map<string, ScoreOverlay>;
+  /** Exact kickoff ISO and hour-bucket keys → teams (for knockout placeholder fallback). */
+  byKickoff: Map<string, EspnFixtureRef>;
+}
+
 interface EspnEvent {
   date: string;
   competitions: Array<{
@@ -93,7 +106,16 @@ async function fetchEspnDate(date: string): Promise<EspnEvent[]> {
   }
 }
 
-function addOverlayFromEvent(map: Map<string, ScoreOverlay>, event: EspnEvent): void {
+function kickoffHourKey(dateIso: string): string {
+  const d = new Date(dateIso);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}`;
+}
+
+function addOverlayFromEvent(
+  map: Map<string, ScoreOverlay>,
+  byKickoff: Map<string, EspnFixtureRef>,
+  event: EspnEvent
+): void {
   const competition = event.competitions?.[0];
   if (!competition) return;
 
@@ -107,6 +129,11 @@ function addOverlayFromEvent(map: Map<string, ScoreOverlay>, event: EspnEvent): 
   const kickoff = competition.date || event.date;
   const homeName = canonicalTeamName(home.team.displayName);
   const awayName = canonicalTeamName(away.team.displayName);
+  const ref: EspnFixtureRef = { homeTeam: homeName, awayTeam: awayName, kickoff, overlay };
+
+  byKickoff.set(kickoff, ref);
+  byKickoff.set(kickoffHourKey(kickoff), ref);
+
   const keys = [
     buildMatchKey(homeName, awayName, kickoff),
     buildDayMatchKey(homeName, awayName, kickoff),
@@ -116,7 +143,7 @@ function addOverlayFromEvent(map: Map<string, ScoreOverlay>, event: EspnEvent): 
   }
 }
 
-export async function fetchEspnScoreOverlays(): Promise<Map<string, ScoreOverlay>> {
+async function collectEspnEvents(): Promise<EspnEvent[]> {
   const today = new Date();
   const nearbyDates = [-1, 0, 1].map((offset) => {
     const d = new Date(today);
@@ -139,17 +166,22 @@ export async function fetchEspnScoreOverlays(): Promise<Map<string, ScoreOverlay
     Promise.all(remainingDates.map(fetchEspnDate)),
   ]);
 
-  const map = new Map<string, ScoreOverlay>();
+  return [...defaultEvents, ...nearbyEvents.flat(), ...remainingEvents.flat()];
+}
 
-  for (const event of defaultEvents) {
-    addOverlayFromEvent(map, event);
+export async function fetchEspnData(): Promise<EspnFetchResult> {
+  const events = await collectEspnEvents();
+  const overlays = new Map<string, ScoreOverlay>();
+  const byKickoff = new Map<string, EspnFixtureRef>();
+
+  for (const event of events) {
+    addOverlayFromEvent(overlays, byKickoff, event);
   }
 
-  for (const events of [...nearbyEvents, ...remainingEvents]) {
-    for (const event of events) {
-      addOverlayFromEvent(map, event);
-    }
-  }
+  return { overlays, byKickoff };
+}
 
-  return map;
+export async function fetchEspnScoreOverlays(): Promise<Map<string, ScoreOverlay>> {
+  const { overlays } = await fetchEspnData();
+  return overlays;
 }

@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import type { Match, MatchStatus, Team } from "@/types/database";
-import { fetchEspnScoreOverlays, type ScoreOverlay } from "@/lib/espn-scores";
+import { fetchEspnData, type ScoreOverlay, type EspnFixtureRef } from "@/lib/espn-scores";
 import { buildMatchKey, buildDayMatchKey, canonicalTeamName } from "@/lib/team-aliases";
 import { enrichKnockoutMatches } from "@/lib/knockout-fixtures";
 import { formatHostCity, getFlagUrl, getTeamCode } from "@/lib/team-codes";
@@ -170,42 +170,108 @@ function statsFixtureToMatch(f: StatsApiFixture): Match {
   };
 }
 
+function applyScoreOverlays(
+  match: Match,
+  espnOverlays: Map<string, ScoreOverlay>,
+  apiFootballOverlays: Map<string, ApiFootballFixture>,
+  home: string,
+  away: string,
+  kickoff: string
+): Match {
+  let result = match;
+
+  const espn = lookupOverlay(espnOverlays, home, away, kickoff);
+  if (espn) {
+    result = applyOverlay(result, espn, "espn");
+  }
+
+  const apiFootball = lookupOverlay(apiFootballOverlays, home, away, kickoff);
+  if (apiFootball) {
+    result = applyOverlay(result, apiFootball, "api-football");
+  }
+
+  return result;
+}
+
+function isKnockoutPlaceholderName(name: string): boolean {
+  return /^Group /i.test(name) || /third place/i.test(name) || /^Winner /i.test(name);
+}
+
+function kickoffHourKey(dateIso: string): string {
+  const d = new Date(dateIso);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}`;
+}
+
+function lookupEspnFixture(kickoff: string, byKickoff: Map<string, EspnFixtureRef>): EspnFixtureRef | undefined {
+  return byKickoff.get(kickoff) ?? byKickoff.get(kickoffHourKey(kickoff));
+}
+
+function applyEspnKnockoutTeams(
+  matches: Match[],
+  byKickoff: Map<string, EspnFixtureRef>
+): Match[] {
+  return matches.map((match) => {
+    const homeName = match.home_team?.name ?? "";
+    const awayName = match.away_team?.name ?? "";
+    if (!isKnockoutPlaceholderName(homeName) && !isKnockoutPlaceholderName(awayName)) {
+      return match;
+    }
+
+    const ref = lookupEspnFixture(match.match_date, byKickoff);
+    if (!ref) return match;
+
+    const homeTeam = makeTeam(ref.homeTeam, null);
+    const awayTeam = makeTeam(ref.awayTeam, null);
+
+    return {
+      ...match,
+      home_team: homeTeam,
+      away_team: awayTeam,
+      home_team_id: homeTeam.id,
+      away_team_id: awayTeam.id,
+    };
+  });
+}
+
 async function loadFixtures(): Promise<Match[]> {
-  const [fixturesRes, espnOverlays, apiFootballOverlays] = await Promise.all([
+  const [fixturesRes, espnData, apiFootballOverlays] = await Promise.all([
     fetch(FIXTURES_URL, { next: { revalidate: 3600 } }),
-    fetchEspnScoreOverlays(),
+    fetchEspnData(),
     fetchApiFootballOverlay(),
   ]);
+
+  const { overlays: espnOverlays, byKickoff: espnByKickoff } = espnData;
 
   if (!fixturesRes.ok) throw new Error(`Fixtures API failed: ${fixturesRes.status}`);
 
   const json = (await fixturesRes.json()) as { fixtures: StatsApiFixture[] };
+  const fixtureByNumber = new Map(json.fixtures.map((f) => [f.matchNumber, f]));
 
   const rawMatches = json.fixtures.map((f) => statsFixtureToMatch(f));
-  const matches = enrichKnockoutMatches(rawMatches);
 
-  return matches.map((match) => {
+  // Pass 1: apply live scores while group-stage names still match ESPN/API keys.
+  const withGroupScores = rawMatches.map((match) => {
+    const num = parseInt(match.id.replace(/^wc2026-/, ""), 10);
+    const f = fixtureByNumber.get(num);
+    if (!f) return match;
+    return applyScoreOverlays(match, espnOverlays, apiFootballOverlays, f.homeTeam, f.awayTeam, f.kickoffUtc);
+  });
+
+  // Pass 2: resolve knockout placeholders from completed group standings.
+  const enriched = enrichKnockoutMatches(withGroupScores);
+
+  // Pass 2b: ESPN fallback for any remaining placeholder knockout slots.
+  const withKnockoutTeams = applyEspnKnockoutTeams(enriched, espnByKickoff);
+
+  // Pass 3: re-apply overlays using resolved knockout team names.
+  return withKnockoutTeams.map((match) => {
     const home = match.home_team?.name ?? "";
     const away = match.away_team?.name ?? "";
-    const kickoff = match.match_date;
-
-    let result = match;
-
-    const espn = lookupOverlay(espnOverlays, home, away, kickoff);
-    if (espn) {
-      result = applyOverlay(result, espn, "espn");
-    }
-
-    const apiFootball = lookupOverlay(apiFootballOverlays, home, away, kickoff);
-    if (apiFootball) {
-      result = applyOverlay(result, apiFootball, "api-football");
-    }
-
-    return result;
+    return applyScoreOverlays(match, espnOverlays, apiFootballOverlays, home, away, match.match_date);
   });
 }
 
-export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v7"], {
+export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v9"], {
   revalidate: 30,
 });
 
