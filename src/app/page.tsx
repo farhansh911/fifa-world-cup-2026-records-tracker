@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { LiveMatchBoardServer } from "@/components/matches/LiveMatchBoardServer";
 import { HeroSection } from "@/components/home/HeroSection";
+import { HomeScoringHub } from "@/components/home/HomeScoringHub";
 import { StatsGrid } from "@/components/home/StatsGrid";
 import { MatchCard } from "@/components/matches/MatchCard";
-import { RecordBrokenCard } from "@/components/records/RecordBrokenCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/animations/Reveal";
 import { toScheduleMatch } from "@/lib/matches";
 import type { Match } from "@/types/database";
-import type { RecordBroken } from "@/types/database";
 import type { TournamentStats } from "@/types/database";
 import {
   getTournamentStats,
@@ -17,9 +16,10 @@ import {
   getFeaturedMatches,
   getCompletedMatches,
   getMatchSchedule,
-  getRecordsBroken,
   getRecordChases,
+  getCareerGoalsRace,
 } from "@/lib/data";
+import { getGoldenBootRace } from "@/lib/golden-boot";
 import type { HeroMatch } from "@/components/home/HeroSection";
 
 export const revalidate = 60;
@@ -67,17 +67,35 @@ function toHeroMatch(match: Match): HeroMatch {
 }
 
 export default async function HomePage() {
-  const [stats, liveMatches, allUpcoming, featuredMatchSources, completedMatches, recentRecords, fullSchedule, recordChases] =
-    await Promise.all([
-      safeFetch(getTournamentStats, null),
-      safeFetch(getLiveMatches, [] as Match[]),
-      safeFetch(getUpcomingMatches, [] as Match[]),
-      safeFetch(getFeaturedMatches, [] as Match[]),
-      safeFetch(() => getCompletedMatches(3), [] as Match[]),
-      safeFetch(getRecordsBroken, [] as RecordBroken[]),
-      safeFetch(getMatchSchedule, [] as Match[]),
-      safeFetch(getRecordChases, []),
-    ]);
+  const [
+    stats,
+    liveMatches,
+    allUpcoming,
+    featuredMatchSources,
+    completedMatches,
+    fullSchedule,
+    recordChases,
+    goldenBoot,
+    careerRace,
+  ] = await Promise.all([
+    safeFetch(getTournamentStats, null),
+    safeFetch(getLiveMatches, [] as Match[]),
+    safeFetch(getUpcomingMatches, [] as Match[]),
+    safeFetch(getFeaturedMatches, [] as Match[]),
+    safeFetch(() => getCompletedMatches(3), [] as Match[]),
+    safeFetch(getMatchSchedule, [] as Match[]),
+    safeFetch(getRecordChases, []),
+    safeFetch(getGoldenBootRace, {
+      leaders: [],
+      standings: [],
+      totalScorers: 0,
+      fontaineRecord: 13,
+      fontaineHolder: "Just Fontaine",
+      goalsToFontaine: null,
+      recentWinners: [],
+    }),
+    safeFetch(getCareerGoalsRace, { holder: null, chasers: [], brokenRecord: null }),
+  ]);
 
   const upcomingMatches = allUpcoming.slice(0, 3);
   const upcomingSchedule = fullSchedule.map(toScheduleMatch);
@@ -96,17 +114,18 @@ export default async function HomePage() {
   const heroFeaturedMatches = featuredMatchSources.map(toHeroMatch);
 
   const heroRecordChase =
+    recordChases.find((c) => c.benchmarkId === "career-goals" && c.status === "broken") ??
+    recordChases.find((c) => c.benchmarkId === "career-goals" && c.status === "chasing") ??
     recordChases.find((c) => c.status === "broken" && c.benchmarkId === "tournaments-with-goal") ??
-    recordChases.find((c) => c.benchmarkId === "career-goals") ??
     recordChases.find((c) => c.status === "chasing" || c.status === "tied") ??
     null;
 
-  const heroLatestRecord = recentRecords[0]
+  const heroLatestRecord = careerRace.brokenRecord
     ? {
-        id: recentRecords[0].id,
-        title: recentRecords[0].title,
-        new_holder: recentRecords[0].new_holder,
-        new_value: recentRecords[0].new_value,
+        id: careerRace.brokenRecord.id,
+        title: careerRace.brokenRecord.title,
+        new_holder: careerRace.brokenRecord.new_holder,
+        new_value: careerRace.brokenRecord.new_value,
       }
     : null;
 
@@ -167,24 +186,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 pb-16 sm:pb-24 border-t border-white/[0.06] overflow-x-hidden min-w-0">
-        <SectionHeading
-          title="Latest records broken"
-          action={<Link href="/records/broken" className="text-sm text-white/45 hover:text-white transition-colors whitespace-nowrap">View all →</Link>}
-        />
-        {recentRecords.length > 0 ? (
-          <Reveal className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentRecords.slice(0, 3).map((r) => (
-              <RecordBrokenCard key={r.id} record={r} />
-            ))}
-          </Reveal>
-        ) : (
-          <p className="card p-10 text-center text-white/35 text-sm">
-            Records will show here once the tournament gets underway.
-          </p>
-        )}
-      </section>
-
+      <HomeScoringHub
+        goldenBoot={goldenBoot}
+        careerHolder={careerRace.holder}
+        careerChasers={careerRace.chasers}
+        careerBrokenRecord={careerRace.brokenRecord}
+      />
     </>
   );
 }

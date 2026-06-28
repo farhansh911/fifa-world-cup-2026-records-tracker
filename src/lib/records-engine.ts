@@ -100,8 +100,16 @@ function recordHighlightScore(id: string): number {
   return 50;
 }
 
+export function isCareerGoalsRecord(record: RecordBroken): boolean {
+  return record.title === "Most FIFA World Cup goals (all-time)";
+}
+
 function sortBrokenRecords(records: RecordBroken[]): RecordBroken[] {
   return [...records].sort((a, b) => {
+    const aCareer = isCareerGoalsRecord(a) ? 1 : 0;
+    const bCareer = isCareerGoalsRecord(b) ? 1 : 0;
+    if (aCareer !== bCareer) return bCareer - aCareer;
+
     const byDate = b.event_date.localeCompare(a.event_date);
     if (byDate !== 0) return byDate;
     const byImportance =
@@ -147,8 +155,15 @@ function careerTotal(player: TournamentPlayerStat): number {
 function buildCareerChases(scorers: TournamentPlayerStat[]): RecordChase[] {
   const benchmark = ALL_TIME_BENCHMARKS.find((b) => b.id === "career-goals")!;
   const second = ALL_TIME_BENCHMARKS.find((b) => b.id === "career-goals-second")!;
+  const CLOSE_CHASE_GAP = 5;
 
-  const chases: RecordChase[] = [];
+  type Entry = {
+    player: TournamentPlayerStat;
+    career: number;
+    chase: RecordChase;
+  };
+
+  const entries: Entry[] = [];
 
   for (const player of scorers) {
     const career = careerTotal(player);
@@ -164,30 +179,102 @@ function buildCareerChases(scorers: TournamentPlayerStat[]): RecordChase[] {
     if (career > benchmarkRef.value) status = "broken";
     else if (career === benchmarkRef.value) status = "tied";
 
-    chases.push({
-      id: makeId("chase", `${player.athleteId}-${benchmarkRef.id}`),
-      benchmarkId: benchmarkRef.id,
-      title: benchmarkRef.title,
-      player: player.name,
-      team: player.team,
-      currentValue: career,
-      recordValue: benchmarkRef.value,
-      recordHolder: benchmarkRef.holder,
-      goalsAway: Math.max(0, goalsAway),
-      status,
-      importance: benchmarkRef.importance,
-      tournamentGoals: player.goals,
-      careerGoals: careerGoalsBefore2026(player.name),
-      explanation:
-        status === "tied"
-          ? `${player.name} has ${career} World Cup goals — level with ${benchmarkRef.holder}'s mark of ${benchmarkRef.value}.`
-          : status === "broken"
-            ? `${player.name} passed ${benchmarkRef.holder} with ${career} career World Cup goals.`
-            : `${player.name} has ${career} World Cup goals (${player.goals} at WC 2026). ${goalsAway} behind ${benchmarkRef.holder}'s record of ${benchmarkRef.value}.`,
+    entries.push({
+      player,
+      career,
+      chase: {
+        id: makeId("chase", `${player.athleteId}-${benchmarkRef.id}`),
+        benchmarkId: benchmarkRef.id,
+        title: benchmarkRef.title,
+        player: player.name,
+        team: player.team,
+        currentValue: career,
+        recordValue: benchmarkRef.value,
+        recordHolder: benchmarkRef.holder,
+        goalsAway: Math.max(0, goalsAway),
+        status,
+        importance: benchmarkRef.importance,
+        tournamentGoals: player.goals,
+        careerGoals: careerGoalsBefore2026(player.name),
+        explanation:
+          status === "tied"
+            ? `${player.name} has ${career} World Cup goals — level with ${benchmarkRef.holder}'s mark of ${benchmarkRef.value}.`
+            : status === "broken"
+              ? `${player.name} passed ${benchmarkRef.holder} with ${career} career World Cup goals.`
+              : `${player.name} has ${career} World Cup goals (${player.goals} at WC 2026). ${goalsAway} behind ${benchmarkRef.holder}'s record of ${benchmarkRef.value}.`,
+      },
     });
   }
 
-  return chases.sort((a, b) => b.currentValue - a.currentValue || a.goalsAway - b.goalsAway);
+  const maxCareer = entries.reduce((max, entry) => Math.max(max, entry.career), 0);
+  const recordSurpassed = maxCareer > benchmark.value;
+  const leaderNames = entries
+    .filter((entry) => entry.career === maxCareer)
+    .map((entry) => entry.player.name);
+  const chases: RecordChase[] = [];
+
+  for (const entry of entries) {
+    if (recordSurpassed) {
+      if (entry.career === maxCareer) {
+        chases.push({
+          ...entry.chase,
+          benchmarkId: benchmark.id,
+          title: benchmark.title,
+          recordValue: maxCareer,
+          recordHolder: benchmark.holder,
+          goalsAway: 0,
+          status: "broken",
+          explanation: `${entry.player.name} holds the all-time World Cup goals record with ${maxCareer} career goals — surpassing ${benchmark.holder}'s mark of ${benchmark.value}.`,
+        });
+        continue;
+      }
+
+      const goalsAway = maxCareer - entry.career;
+      if (goalsAway > CLOSE_CHASE_GAP) continue;
+
+      chases.push({
+        ...entry.chase,
+        benchmarkId: benchmark.id,
+        title: benchmark.title,
+        currentValue: entry.career,
+        recordValue: maxCareer,
+        recordHolder: leaderNames.join(" / "),
+        goalsAway,
+        status: "chasing",
+        explanation: `${entry.player.name} has ${entry.career} World Cup goals (${entry.player.goals} at WC 2026). ${goalsAway} behind ${leaderNames[0]}'s mark of ${maxCareer}.`,
+      });
+      continue;
+    }
+
+    chases.push(entry.chase);
+  }
+
+  const statusRank: Record<RecordChase["status"], number> = { broken: 0, tied: 1, chasing: 2 };
+
+  return chases.sort(
+    (a, b) =>
+      statusRank[a.status] - statusRank[b.status] ||
+      b.currentValue - a.currentValue ||
+      a.goalsAway - b.goalsAway
+  );
+}
+
+export function pickCareerGoalsRace(
+  chases: RecordChase[],
+  broken: RecordBroken[]
+): {
+  holder: RecordChase | null;
+  chasers: RecordChase[];
+  brokenRecord: RecordBroken | null;
+} {
+  const careerChases = chases.filter((c) => c.benchmarkId === "career-goals");
+  const holder = careerChases.find((c) => c.status === "broken") ?? null;
+  const chasers = careerChases
+    .filter((c) => c.status === "chasing")
+    .sort((a, b) => b.currentValue - a.currentValue);
+  const brokenRecord = broken.find(isCareerGoalsRecord) ?? null;
+
+  return { holder, chasers, brokenRecord };
 }
 
 function buildSingleTournamentChases(scorers: TournamentPlayerStat[]): RecordChase[] {
@@ -1140,7 +1227,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v9"],
+  ["wc2026-records-v10"],
   { revalidate: 300 }
 );
 

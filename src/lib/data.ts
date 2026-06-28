@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getWorldCupMatches } from "@/lib/fixtures-api";
 import { buildGroupStandings, type GroupStandings } from "@/lib/group-standings";
-import { getRecordsSnapshot } from "@/lib/records-engine";
+import { getRecordsSnapshot, pickCareerGoalsRace } from "@/lib/records-engine";
 import { getLiveMatchViews, getFeaturedMatchView, getMatchLiveView } from "@/lib/live-matches";
 
 export { getLiveMatchViews, getFeaturedMatchView, getMatchLiveView };
@@ -131,6 +131,11 @@ export async function getRecordCreated(id: string): Promise<RecordCreated | null
 export async function getRecordChases() {
   const snapshot = await getRecordsSnapshot();
   return snapshot.chases;
+}
+
+export async function getCareerGoalsRace() {
+  const snapshot = await getRecordsSnapshot();
+  return pickCareerGoalsRace(snapshot.chases, snapshot.broken);
 }
 
 export async function getTimelineEvents(): Promise<TimelineEvent[]> {
