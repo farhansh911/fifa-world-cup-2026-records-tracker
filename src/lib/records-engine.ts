@@ -220,7 +220,7 @@ function buildCareerChases(scorers: TournamentPlayerStat[]): RecordChase[] {
           ...entry.chase,
           benchmarkId: benchmark.id,
           title: benchmark.title,
-          recordValue: maxCareer,
+          recordValue: benchmark.value,
           recordHolder: benchmark.holder,
           goalsAway: 0,
           status: "broken",
@@ -1227,7 +1227,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v10"],
+  ["wc2026-records-v11"],
   { revalidate: 300 }
 );
 

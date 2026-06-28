@@ -261,8 +261,13 @@ export function HeroSection({ stats, featuredMatches, latestRecord, recordChase,
                       <p className="font-display text-xl sm:text-2xl font-black text-accent tabular-nums">{recordChase.currentValue}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[10px] uppercase text-white/35">Record</p>
+                      <p className="text-[10px] uppercase text-white/35">
+                        {recordChase.status === "broken" ? "Previous best" : "Record"}
+                      </p>
                       <p className="font-display text-xl sm:text-2xl font-black text-white/45 tabular-nums">{recordChase.recordValue}</p>
+                      {recordChase.status === "broken" && (
+                        <p className="text-[10px] text-white/30 mt-0.5 truncate max-w-[120px]">{recordChase.recordHolder}</p>
+                      )}
                     </div>
                   </div>
                   <p className="text-xs text-white/45 leading-relaxed">
