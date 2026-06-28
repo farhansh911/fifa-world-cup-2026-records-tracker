@@ -82,8 +82,11 @@ const IMPORTANCE_RANK: Record<ImportanceLevel, number> = {
 
 /** Higher = more likely to appear first when dates tie. Player milestones beat generic tallies. */
 function recordHighlightScore(id: string): number {
-  if (/six-wc-goals|tied-wc-tournaments|hattrick|fastest-goal|most-goals-one|broken-chase-tournaments|first-knockout/.test(id)) {
+  if (/six-wc-goals|broken-chase-tournaments|first-knockout/.test(id)) {
     return 100;
+  }
+  if (/tied-wc-tournaments|hattrick|fastest-goal|most-goals-one/.test(id)) {
+    return 60;
   }
   if (/broken-chase|broken-tied|four-goal|hattrick-broken/.test(id)) {
     return 90;
@@ -279,14 +282,24 @@ function buildMultiTournamentScoringRecords(
   const benchmark = ALL_TIME_BENCHMARKS.find((b) => b.id === "tournaments-with-goal")!;
   const broken: RecordBroken[] = [];
   const created: RecordCreated[] = [];
-  const chases: RecordChase[] = [];
+
+  type Entry = {
+    player: TournamentPlayerStat;
+    total: number;
+    status: RecordChase["status"];
+    yearList: string;
+    explanation: string;
+    eventDate: string;
+    chase: RecordChase;
+  };
+
+  const entries: Entry[] = [];
 
   for (const player of scorers) {
     if (player.goals <= 0) continue;
 
     const previousYears = wcTournamentYearsWithGoalBefore2026(player.name);
-    const previousCount = previousYears.length;
-    if (previousCount === 0) continue;
+    if (previousYears.length === 0) continue;
 
     const allYears = [...previousYears, 2026];
     const total = allYears.length;
@@ -321,56 +334,96 @@ function buildMultiTournamentScoringRecords(
       careerGoals: careerGoalsBefore2026(player.name) + player.goals,
       explanation,
     };
+
+    entries.push({
+      player,
+      total,
+      status,
+      yearList,
+      explanation,
+      eventDate: latestGoalMatchDate(player.name, highlights) ?? NOW(),
+      chase,
+    });
+  }
+
+  const maxTotal = entries.reduce((max, entry) => Math.max(max, entry.total), 0);
+  const recordSurpassed = maxTotal > benchmark.value;
+  const leaderNames = entries
+    .filter((entry) => entry.total === maxTotal && entry.status === "broken")
+    .map((entry) => entry.player.name);
+  const chases: RecordChase[] = [];
+
+  for (const entry of entries) {
+    // Once someone passes the old mark (e.g. Ronaldo at 6), tying the previous best (5) is not a new record.
+    if (recordSurpassed && entry.status !== "broken") continue;
+
+    const chase: RecordChase = recordSurpassed
+      ? {
+          ...entry.chase,
+          recordValue: maxTotal,
+          recordHolder: leaderNames.join(" / ") || entry.player.name,
+          goalsAway: Math.max(0, maxTotal - entry.total),
+          status: entry.total === maxTotal ? "broken" : "chasing",
+        }
+      : entry.chase;
+
+    if (recordSurpassed && entry.total < maxTotal) continue;
+
     chases.push(chase);
 
-    const eventDate = latestGoalMatchDate(player.name, highlights) ?? NOW();
-
-    if (status === "broken") {
+    if (entry.status === "broken") {
       broken.push({
-        id: makeId("broken", chase.id),
+        id: makeId("broken", entry.chase.id),
         title: benchmark.title,
         previous_holder: benchmark.holder,
-        new_holder: player.name,
+        new_holder: entry.player.name,
         old_value: `${benchmark.value} tournaments`,
-        new_value: `${total} tournaments (${yearList})`,
+        new_value: `${entry.total} tournaments (${entry.yearList})`,
         match_id: null,
         importance: benchmark.importance,
-        explanation,
-        event_date: eventDate,
+        explanation: entry.explanation,
+        event_date: entry.eventDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
 
       created.push({
-        id: makeId("created", `six-wc-goals-${player.athleteId}`),
-        title: `First player to score in ${total} World Cups`,
-        holder: player.name,
-        value: `${total} tournaments (${yearList})`,
+        id: makeId("created", `six-wc-goals-${entry.player.athleteId}`),
+        title: `First player to score in ${entry.total} World Cups`,
+        holder: entry.player.name,
+        value: `${entry.total} tournaments (${entry.yearList})`,
         match_id: null,
-        description: explanation,
-        event_date: eventDate,
+        description: entry.explanation,
+        event_date: entry.eventDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
-    } else if (status === "tied") {
+    } else if (entry.status === "tied") {
       created.push({
-        id: makeId("created", `tied-wc-tournaments-${player.athleteId}`),
-        title: `Scored in ${total} World Cup tournaments`,
-        holder: player.name,
-        value: `${total} editions (${yearList})`,
+        id: makeId("created", `tied-wc-tournaments-${entry.player.athleteId}`),
+        title: `Scored in ${entry.total} World Cup tournaments`,
+        holder: entry.player.name,
+        value: `${entry.total} editions (${entry.yearList})`,
         match_id: null,
-        description: explanation,
-        event_date: eventDate,
+        description: entry.explanation,
+        event_date: entry.eventDate,
         created_at: NOW(),
         updated_at: NOW(),
       });
     }
   }
 
+  const statusRank: Record<RecordChase["status"], number> = { broken: 0, tied: 1, chasing: 2 };
+
   return {
     broken,
     created,
-    chases: chases.sort((a, b) => b.currentValue - a.currentValue || a.goalsAway - b.goalsAway),
+    chases: chases.sort(
+      (a, b) =>
+        statusRank[a.status] - statusRank[b.status] ||
+        b.currentValue - a.currentValue ||
+        a.goalsAway - b.goalsAway
+    ),
   };
 }
 
@@ -1087,7 +1140,7 @@ async function loadRecordsSnapshot(): Promise<RecordsSnapshot> {
 
 export const getCachedRecordsSnapshot = unstable_cache(
   loadRecordsSnapshot,
-  ["wc2026-records-v8"],
+  ["wc2026-records-v9"],
   { revalidate: 300 }
 );
 

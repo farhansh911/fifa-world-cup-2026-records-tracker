@@ -95,7 +95,11 @@ export default async function HomePage() {
 
   const heroFeaturedMatches = featuredMatchSources.map(toHeroMatch);
 
-  const heroRecordChase = recordChases.find((c) => c.benchmarkId === "career-goals") ?? recordChases[0] ?? null;
+  const heroRecordChase =
+    recordChases.find((c) => c.status === "broken" && c.benchmarkId === "tournaments-with-goal") ??
+    recordChases.find((c) => c.benchmarkId === "career-goals") ??
+    recordChases.find((c) => c.status === "chasing" || c.status === "tied") ??
+    null;
 
   const heroLatestRecord = recentRecords[0]
     ? {
