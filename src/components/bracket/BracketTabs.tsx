@@ -16,6 +16,7 @@ interface BracketTabsProps {
   bracketMatches?: BracketViewMatch[];
   initialTab?: Tab;
   initialGroup?: string;
+  groupStageComplete?: boolean;
 }
 
 export function BracketTabs({
@@ -23,6 +24,7 @@ export function BracketTabs({
   bracketMatches = [],
   initialTab = "groups",
   initialGroup,
+  groupStageComplete = false,
 }: BracketTabsProps) {
   const [active, setActive] = useState<Tab>(initialTab);
   const [groupFilter, setGroupFilter] = useState(initialGroup ?? "all");
@@ -43,15 +45,20 @@ export function BracketTabs({
     [groups]
   );
 
+  const tabs = groupStageComplete
+    ? ([
+        { id: "bracket" as const, label: "Knockout bracket" },
+        { id: "groups" as const, label: "Group standings" },
+      ] as const)
+    : ([
+        { id: "groups" as const, label: "Group standings" },
+        { id: "bracket" as const, label: "Knockout bracket" },
+      ] as const);
+
   return (
     <div>
       <div className="flex gap-1 border-b border-white/[0.08] mb-6">
-        {(
-          [
-            { id: "groups" as const, label: "Group standings" },
-            { id: "bracket" as const, label: "Knockout bracket" },
-          ] as const
-        ).map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"

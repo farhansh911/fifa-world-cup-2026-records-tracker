@@ -557,6 +557,10 @@ export function buildGroupStandings(matches: Match[]): GroupStandings[] {
   return applyCrossGroupThirdRanking(standings);
 }
 
+export function isGroupStageComplete(standings: GroupStandings[]): boolean {
+  return standings.length > 0 && standings.every((g) => g.isComplete);
+}
+
 export function getGroupStandingsForGroup(matches: Match[], group: string): GroupStandings | null {
   return buildGroupStandings(matches).find((g) => g.group === group) ?? null;
 }
