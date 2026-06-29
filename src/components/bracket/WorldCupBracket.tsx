@@ -17,6 +17,7 @@ import {
   BRACKET_SF1,
   BRACKET_SF2,
   BRACKET_THIRD,
+  bracketMatchesInTreeOrder,
   LEFT_GROUPS,
   RIGHT_GROUPS,
   groupAccentBorder,
@@ -39,8 +40,8 @@ function SlotLine({
   score?: number | null;
   mobile?: boolean;
 }) {
-  const label = slot.team ?? slot.code;
-  const isCode = !slot.team;
+  const label = slot.resolved ? (slot.team ?? slot.code) : slot.code;
+  const isCode = !slot.resolved || !slot.team;
 
   return (
     <div
@@ -427,9 +428,9 @@ function MobileKnockoutBracket({
   groups: GroupStandings[];
   bracket: Map<number, BracketViewMatch>;
 }) {
-  const r32 = [...BRACKET_LEFT_R32, ...BRACKET_RIGHT_R32];
-  const r16 = [...BRACKET_LEFT_R16, ...BRACKET_RIGHT_R16];
-  const qf = [...BRACKET_LEFT_QF, ...BRACKET_RIGHT_QF];
+  const r32 = bracketMatchesInTreeOrder([...BRACKET_LEFT_R32, ...BRACKET_RIGHT_R32]);
+  const r16 = bracketMatchesInTreeOrder([...BRACKET_LEFT_R16, ...BRACKET_RIGHT_R16]);
+  const qf = bracketMatchesInTreeOrder([...BRACKET_LEFT_QF, ...BRACKET_RIGHT_QF]);
 
   return (
     <div className="lg:hidden p-3 sm:p-4 space-y-6">

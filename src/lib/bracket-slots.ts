@@ -4,6 +4,11 @@ import {
   THIRD_PLACE_MATCH_WINNER,
 } from "@/lib/third-place-lookup";
 
+/** ESPN scoreboard labels like "Round of 32 3 Winner" — not real teams. */
+export function isEspnKnockoutPlaceholder(label: string): boolean {
+  return /^(Round of (32|16)|Quarterfinal) \d+ Winner$/i.test(label.trim());
+}
+
 /** Short FIFA-style code shown until a slot is locked. */
 export function formatKnockoutCode(label: string): string {
   const winners = label.match(/^Group ([A-L]) winners$/i);
@@ -63,6 +68,10 @@ export function resolveKnockoutSlot(
   knockoutWinners: Map<number, string>,
   matchNumber?: number
 ): KnockoutSlotDisplay {
+  if (isEspnKnockoutPlaceholder(label)) {
+    return { code: "TBD", team: null, resolved: false };
+  }
+
   const code = formatKnockoutCode(label);
 
   const winners = label.match(/^Group ([A-L]) winners$/i);
@@ -138,16 +147,63 @@ export function resolveKnockoutSlot(
  *
  * @see https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/knockout-stage-match-schedule-bracket
  */
-export const BRACKET_LEFT_R32 = [73, 75, 74, 77, 81, 82, 83, 84];
-export const BRACKET_RIGHT_R32 = [76, 78, 79, 80, 85, 87, 86, 88];
-export const BRACKET_LEFT_R16 = [90, 89, 94, 93];
-export const BRACKET_RIGHT_R16 = [91, 92, 96, 95];
+/** Top→bottom: M74/M77 feed M89, then M73/M75→M90 — matches FIFA poster (Germany v Paraguay on top). */
+export const BRACKET_LEFT_R32 = [74, 77, 73, 75, 81, 82, 83, 84];
+/** Top→bottom: M89 (W74 v W77) then M90 (W73 v W75), then M94/M93. */
+export const BRACKET_LEFT_R16 = [89, 90, 94, 93];
+export const BRACKET_RIGHT_R32 = [76, 78, 79, 80, 86, 88, 85, 87];
+export const BRACKET_RIGHT_R16 = [91, 92, 95, 96];
 export const BRACKET_LEFT_QF = [97, 98];
 export const BRACKET_RIGHT_QF = [99, 100];
 export const BRACKET_SF1 = 101;
 export const BRACKET_SF2 = 102;
 export const BRACKET_THIRD = 103;
 export const BRACKET_FINAL = 104;
+
+/**
+ * Vertical row (0–15) on each bracket half — matches FIFA poster tree alignment.
+ * R32 occupies even rows; R16 sits between feeder pairs; QF/SF centered on their subtrees.
+ */
+export const BRACKET_TREE_ROWS = 16;
+
+export const BRACKET_MATCH_ROW: Record<number, number> = {
+  74: 0,
+  77: 2,
+  73: 4,
+  75: 6,
+  81: 8,
+  82: 10,
+  83: 12,
+  84: 14,
+  89: 1,
+  90: 5,
+  94: 9,
+  93: 13,
+  97: 3,
+  98: 11,
+  101: 7,
+  76: 0,
+  78: 2,
+  79: 4,
+  80: 6,
+  86: 8,
+  88: 10,
+  85: 12,
+  87: 14,
+  91: 1,
+  92: 5,
+  95: 9,
+  96: 13,
+  99: 3,
+  100: 11,
+  102: 7,
+};
+
+export function bracketMatchesInTreeOrder(numbers: number[]): number[] {
+  return [...numbers].sort(
+    (a, b) => (BRACKET_MATCH_ROW[a] ?? 0) - (BRACKET_MATCH_ROW[b] ?? 0)
+  );
+}
 
 export const LEFT_GROUPS = ["A", "B", "C", "D", "E", "F"];
 export const RIGHT_GROUPS = ["G", "H", "I", "J", "K", "L"];

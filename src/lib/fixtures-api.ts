@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { Match, MatchStatus, Team } from "@/types/database";
 import { fetchEspnData, type ScoreOverlay, type EspnFixtureRef } from "@/lib/espn-scores";
 import { buildMatchKey, buildDayMatchKey, canonicalTeamName } from "@/lib/team-aliases";
+import { isEspnKnockoutPlaceholder } from "@/lib/bracket-slots";
 import { enrichKnockoutMatches } from "@/lib/knockout-fixtures";
 import { formatHostCity, getFlagUrl, getTeamCode } from "@/lib/team-codes";
 
@@ -213,15 +214,29 @@ function applyEspnKnockoutTeams(
   return matches.map((match) => {
     const homeName = match.home_team?.name ?? "";
     const awayName = match.away_team?.name ?? "";
-    if (!isKnockoutPlaceholderName(homeName) && !isKnockoutPlaceholderName(awayName)) {
-      return match;
-    }
+    const needsHome =
+      isKnockoutPlaceholderName(homeName) || isEspnKnockoutPlaceholder(homeName);
+    const needsAway =
+      isKnockoutPlaceholderName(awayName) || isEspnKnockoutPlaceholder(awayName);
+    if (!needsHome && !needsAway) return match;
 
     const ref = lookupEspnFixture(match.match_date, byKickoff);
     if (!ref) return match;
 
-    const homeTeam = makeTeam(ref.homeTeam, null);
-    const awayTeam = makeTeam(ref.awayTeam, null);
+    let homeTeam = match.home_team!;
+    let awayTeam = match.away_team!;
+    let changed = false;
+
+    if (needsHome && !isEspnKnockoutPlaceholder(ref.homeTeam)) {
+      homeTeam = makeTeam(ref.homeTeam, null);
+      changed = true;
+    }
+    if (needsAway && !isEspnKnockoutPlaceholder(ref.awayTeam)) {
+      awayTeam = makeTeam(ref.awayTeam, null);
+      changed = true;
+    }
+
+    if (!changed) return match;
 
     return {
       ...match,
@@ -271,7 +286,7 @@ async function loadFixtures(): Promise<Match[]> {
   });
 }
 
-export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v9"], {
+export const getCachedWorldCupMatches = unstable_cache(loadFixtures, ["wc2026-fixtures-v10"], {
   revalidate: 30,
 });
 
